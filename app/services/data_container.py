@@ -556,23 +556,3 @@ class DataContainer:
         self.groups = groups
         self.records = records 
     
-
-
-if __name__ == "__main__":
-
-    steps = ['raw','proc']#'raw',
-    rawProjectsPath = './test/records/raw/' #d['rawProjectsPath']
-    procProjectsPath = './test/records/proc/' #d['procProjectsPath']    
-    allowedProjects = ['event1','event2'] #d['allowedProjects']
-    processes = ['preprocessed-VR-sessions','preprocessed-VR-sessions-gated'] #d['processes'] 
-    stepsPaths = {'raw':'./test/records/raw/','proc':'./test/records/proc/'} #{'raw':rawProjectsPath,'proc':procProjectsPath}
-
-    print('load projects')    
-    dataContainer = DataContainer(rawProjectsPath, procProjectsPath, allowedProjects, processes)
-    print('dataContainer',dataContainer)
-    print('dataContainer projects',dataContainer.projects)
-    for step in steps: 
-        print('load step',step)
-        dataContainer.load_all(step)
-        print('dataContainer projects',[p.name for p in dataContainer.projects])
-        print('dataContainer groups',[(g.id, g.name, g.project.name,g.step,g.version) for g in dataContainer.groups])
