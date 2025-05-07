@@ -12,6 +12,7 @@ Procezo is a fullstack Python application for time-series CSV data analytics. In
 
 ## Project structure
 
+```
 procezo/
 ├── app/ # FastAPI backend
 │ ├── api/ # API routes
@@ -32,6 +33,7 @@ procezo/
 ├── run.py # Entrypoint script for running app
 ├── requirements.txt # Dependencies
 └── README.md # This file
+```
 
 ## Installation
 
