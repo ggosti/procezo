@@ -1,0 +1,28 @@
+{
+    "group": "group1",
+    "raw records folder": "test/records/raw/event1/group1",
+    "raw records": [
+        "U1",
+        "U2",
+        "U3",
+        "U4"
+    ],
+    "bbox": {},
+    "preprocessedVRsessions": {
+        "U1-preprocessed": {
+            "t0": 10.0,
+            "t1": 80.0
+        },
+        "U2-preprocessed": {
+            "t0": 20.0,
+            "t1": 79.0
+        }
+    },
+    "gated": {
+        "thVar >=": 0.3,
+        "thVar <=": 1,
+        "thTime >=": 0,
+        "thTime <=": 360
+    },
+    "preprocessedVRsessions-gated": {}
+}

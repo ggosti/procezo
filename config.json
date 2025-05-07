@@ -1,0 +1,10 @@
+{
+    "rawProjectsPath" : "./test/records/raw/",
+    "procProjectsPath" : "./test/records/proc/",
+    "allowedProjects" : ["event1","event2"],
+    "processes": ["preprocessed-VR-sessions", "preprocessed-VR-sessions-gated"],
+    "processesDerivatives": {
+        "raw": ["preprocessed-VR-sessions"],
+        "preprocessed-VR-sessions": ["preprocessed-VR-sessions-gated"]
+    }
+}

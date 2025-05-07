@@ -1,0 +1,9 @@
+{
+    "group": "group1",
+    "raw records folder": "test\\records\\raw\\event2\\group1",
+    "raw records": [
+        "abc"
+    ],
+    "bbox": {},
+    "preprocessedVRsessions": {}
+}
