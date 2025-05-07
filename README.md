@@ -61,8 +61,11 @@ Start the app locally:
 ```bash
 python run.py
 ```
+
 This sets up the FastAPI backend and a Plotly Dash frontend
+
 - FastAPI: http://localhost:8000/docs
+
 - Dash frontend: http://localhost:8000/dashboard
 
 ## Architecture Overview
@@ -74,7 +77,8 @@ Procezo uses a layered architecture:
 
 See /api/... for endpoints and /dashboard for the interactive UI.
   
-## Example API Calls:
+## Example API Calls
+
 - List projects:
 
 ```
@@ -97,13 +101,25 @@ GET /api/files/{project}/{group}
 GET /api/data/{project}/{group}/{filename}
 ```
 
-##Development Notes
+## Development Notes
 
 Procezo is part of the Interlupo pipeline, it can either be used together with Kapto or it can be integrated into a custom pipeline.
 If it is used as a standalone :
 - To add data: place CSVs under data/<project>/<group>/
 - To reload data: restart the app (TODO: implement live reload logic)
 - To modify interfaces: edit dash_app/layout.py and callbacks.py
-- To implement new notebooks: edit example Jupyter Notebbok
+- To implement new notebooks: edit example Jupyter Notebook
 
-- 
+## To Do / Ideas
+
+- Add caching (e.g. Redis or TTL-based reloading)
+- Add file upload support
+- Support multi-user session states
+- Dockerize the app for deployment
+
+## License
+
+GPL-3.0 License — see `LICENSE` file.
+
+## Contributing
+Contributions are welcome! Fork the repo, create a branch, and open a PR.
