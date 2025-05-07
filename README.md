@@ -15,20 +15,33 @@ Procezo is a fullstack Python application for time-series CSV data analytics. In
 ```
 procezo/
 ├── app/ # FastAPI backend
-│ ├── api/ # API routes
-│ ├── core/ # Global state, configuration
-│ ├── services/ # Domain logic (DataContainer, etc.)
-│ └── main.py # FastAPI app entrypoint
+│  ├── api/ # API routes
+│  ├── core/ # Global state, configuration
+│  ├── services/ # Domain logic (DataContainer, etc.)
+│  └── main.py # FastAPI app entrypoint
 │
 ├── dash_app/ # Dash frontend
-│ ├── layout.py # Dash layout
-│ ├── callbacks.py # Interactivity
-│ └── app.py # Mounted Dash app
+│  ├── layout.py # Dash layout
+│  ├── callbacks.py # Interactivity
+│  └── app.py # Mounted Dash app
 │
-├── data/ # Your CSV data (project/group/*.csv)
-│ └── project1/
-│ └── groupA/
-│ └── data.csv
+├── data/ # Your record data (project/group/*.csv)
+│  ├── records/
+|     ├── proc/
+|     └── raw/
+│        ├── event1/
+|        |   ├── group1/
+|        |   |  ├── U1.csv
+|        |   |  ├── U2.csv
+|        |   |  ├── U3.csv
+|        |   |  └── U4.csv
+|        |   └── group2/
+|        |      └── abc.csv
+│        └── event2/
+|            ├── group2/
+|            |   └── abc.csv
+|            └── group2/
+|               └── abc.csv
 │
 ├── run.py # Entrypoint script for running app
 ├── requirements.txt # Dependencies
