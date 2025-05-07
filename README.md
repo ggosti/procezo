@@ -37,21 +37,21 @@ procezo/
 
 1. **Clone the repo**
 
-```
+```bash
  git clone https://github.com/your-user/procezo.git
  cd procezo
 ```
 
 2. **Create the virtual environment**
 
-```
+```bash
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 ```
 
 3. **Install dependencies**
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
