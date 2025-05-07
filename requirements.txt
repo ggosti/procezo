@@ -1,0 +1,17 @@
+# Core framework
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+
+# Dash and Plotly for frontend
+dash==2.16.1
+dash-bootstrap-components==1.5.0
+plotly==5.21.0
+
+# Data handling
+pandas==2.2.2
+scipy
+matplotlib
+scikit-learn
+
+# If using Pydantic v2+
+pydantic==2.7.1
