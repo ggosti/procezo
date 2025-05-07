@@ -55,3 +55,55 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
+## Running the App
+
+Start the app locally:
+```bash
+python run.py
+```
+This sets up the FastAPI backend and a Plotly Dash frontend
+- FastAPI: http://localhost:8000/docs
+- Dash frontend: http://localhost:8000/dashboard
+
+## Architecture Overview
+
+Procezo uses a layered architecture:
+- CSV File Tree → loaded into → DataContainer
+- FastAPI API reads from DataContainer and exposes endpoints
+- Dash interacts only through FastAPI APIs for a robust, decoupled design
+
+See /api/... for endpoints and /dashboard for the interactive UI.
+  
+## Example API Calls:
+- List projects:
+
+```
+GET /api/projects
+```
+- List groups in a project:
+
+```
+GET /api/groups/{project}
+```
+
+- List records (CSVs) in a group:
+
+```
+GET /api/files/{project}/{group}
+```
+- Get CSV data as JSON:
+
+```
+GET /api/data/{project}/{group}/{filename}
+```
+
+##Development Notes
+
+Procezo is part of the Interlupo pipeline, it can either be used together with Kapto or it can be integrated into a custom pipeline.
+If it is used as a standalone :
+- To add data: place CSVs under data/<project>/<group>/
+- To reload data: restart the app (TODO: implement live reload logic)
+- To modify interfaces: edit dash_app/layout.py and callbacks.py
+- To implement new notebooks: edit example Jupyter Notebbok
+
+- 
