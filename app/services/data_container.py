@@ -44,7 +44,7 @@ class Record:
         self.child_records = []
 
     def to_dict(self):
-        return self.df.to_dict(orient="records")
+        return self.data.to_dict(orient="records")
 
     def set_ver(self, ver):
         self.version = ver
@@ -244,7 +244,6 @@ class DataContainer:
         self.processes = processes # = d['processes']
         #self.processesDerivatives = processesDerivatives # = d['processesDerivatives']
 
-
     def get_project(self,project_name,step):
         filterProjects = [pr for pr in self.projects if (pr.name == project_name) and pr.step == step]
         assert len(filterProjects) < 2, "too many projects with the same name and step"
@@ -254,7 +253,7 @@ class DataContainer:
     
     def get_group(self,project_name,group_name,step,version=None):
         project = self.get_project(project_name,step)
-        print('project',project.name,project.step,project.groups)
+        #print('project',project.name,project.step,project.groups)
         filterGroups = [gr for gr in project.groups if (gr.name == group_name)]
         if isinstance(version, str):
             filterGroups = [gr for gr in filterGroups if gr.version == version]
@@ -264,11 +263,12 @@ class DataContainer:
     
     def get_record(self,project_name,group_name,record_name,step,version=None):
         group = self.get_group(project_name,group_name,step,version)
+        #print('group',group, [r.name for r in group.records])
         filterRecords = [r for r in group.records if (r.name == record_name) ] 
         if isinstance(version, str):
             filterRecords = [r for r in filterRecords if r.version == version]
         assert len(filterRecords) <= 1, "Error: to many records with the same name, group, project, and step!!! "+str(filterRecords)
-        print('recordFiltered',filterRecords)
+        #print('recordFiltered',filterRecords)
         if len(filterRecords) == 1:
             record = filterRecords[0]
             return record
@@ -412,9 +412,9 @@ class DataContainer:
         
 
         """
-        projects = []
-        groups = [] 
-        records = []
+        projects = self.projects
+        groups = self.groups
+        records = self.groups
 
         # Create proc projects dir for each raw project dir if it does not exist
         #print('Create proc projects dir for each raw project dir if it does not exist',project_dir, step)
