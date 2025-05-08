@@ -102,7 +102,7 @@ This sets up the FastAPI backend and a Plotly Dash frontend
 ## Architecture Overview
 
 Procezo uses a layered architecture:
-- CSV File Tree → loaded into → DataContainer
+- Records Tree → loaded into → DataContainer
 - FastAPI API reads from DataContainer and exposes endpoints
 - Dash interacts only through FastAPI APIs for a robust, decoupled design
 
