@@ -108,12 +108,12 @@ GET /api/groups/{project}
 - List records (CSVs) in a group:
 
 ```
-GET /api/files/{project}/{group}
+GET /api/records/{project}/{group}
 ```
 - Get CSV data as JSON:
 
 ```
-GET /api/data/{project}/{group}/{filename}
+GET /api/record/{project}/{group}/{filename}
 ```
 
 ## Development Notes
