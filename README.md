@@ -77,11 +77,11 @@ To test DataContainer class:
 ```bash
 python -m doctest app/services/data_container.py
 ```
-To test api endpoint, use 
+To test api endpoints, use 
 ```bash
 http://127.0.0.1:8000/docs
 ```
-In future, doctest will be implemented for endpoints
+In the future, doctest will be implemented for endpoints:
 ```bash
 python -m doctest app/api/endpoints.py
 ```
