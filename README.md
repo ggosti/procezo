@@ -69,6 +69,22 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 ```bash
 pip install -r requirements.txt
 ```
+## Test
+
+This web app is based on a data structure made on the class DataContainer defined in `app/services/data_container.py`. 
+models.py defines classes for projects, groups, and records.
+To test DataContainer class:
+```bash
+python -m doctest app/services/data_container.py
+```
+To test api endpoint, use 
+```bash
+http://127.0.0.1:8000/docs
+```
+In future, doctest will be implemented for endpoints
+```bash
+python -m doctest app/api/endpoints.py
+```
 
 ## Running the App
 
