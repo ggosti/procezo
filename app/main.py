@@ -9,6 +9,7 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from app.core.state import data_container
 from app.api.endpoints import router as api_router
 from dash_app.app import dash_app
+from dash_app.vars_app import dash_app as vars
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,6 +30,7 @@ app.include_router(api_router)
 
 # Mount Dash at /dashboard
 app.mount("/dashboard", WSGIMiddleware(dash_app.server))
+app.mount("/vars", WSGIMiddleware(vars.server))
 
 # Allow local frontend access, Enable CORS (optional but common for Dash/JS frontends)
 app.add_middleware(

@@ -24,7 +24,7 @@ def list_records(step: str, project_name: str, group_name: str, ver: Optional[st
     print('records',records)
     if len(records) == 0:
         return JSONResponse(content={"error": f"Not found records in {project_name}/{group_name} at step {step} ver {ver}"}, status_code=404)
-    return [[r.name,r.step,r.version] for r in records]
+    return [{"name":r.name,"step":r.step,"ver":r.version,"time_key":r.timeKey} for r in records]
 
 @router.get("/api/record/{step}/{project_name}/{group_name}/{record_name}")
 def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
