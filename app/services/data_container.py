@@ -258,12 +258,19 @@ class DataContainer:
         if isinstance(version, str):
             filterGroups = [gr for gr in filterGroups if gr.version == version]
         assert len(filterGroups) < 2, "too many groups with the same name, project, and step"+str( [(gr.name,gr.version) for gr in filterGroups ] )
-        group = filterGroups[0]
-        return group
+
+        if len(filterGroups) == 1:
+            group = filterGroups[0]
+            return group
+        else:
+            return None
     
     def get_record(self,project_name,group_name,record_name,step,version=None):
         group = self.get_group(project_name,group_name,step,version)
         #print('group',group, [r.name for r in group.records])
+        if group is None:
+            print('group is None')
+            return None
         filterRecords = [r for r in group.records if (r.name == record_name) ] 
         if isinstance(version, str):
             filterRecords = [r for r in filterRecords if r.version == version]
@@ -277,16 +284,20 @@ class DataContainer:
 
     def get_groups_in_project(self,project_name,step,version=None):
         project = self.get_project(project_name,step)
-        groupsInProj = [gr for gr in project.groups if (gr.project.name ==  project_name) and gr.step == step] 
+        groupsInProj = [gr for gr in project.groups if gr.step == step] 
         if isinstance(version, str):
-            groupsInProj = [gr for gr in project.groups if (gr.project.name ==  project_name) and gr.step == step and gr.version == version]
+            groupsInProj = [gr for gr in project.groups if gr.step == step and gr.version == version]
         return groupsInProj
 
     def get_recods_in_project_and_group(self,project_name,group_name,step,version=None):
-        group = self.get_group(project_name,group_name,step,version)
-        recordsInGroup = [r for r in group.records if (r.project.name == project_name) and (r.group.name == group_name) and r.step == step]
+        project = self.get_project(project_name,step)
+        #print('project',project.name,project.step,project.groups)
+        filterGroups = [gr for gr in project.groups if (gr.name == group_name)]
         if isinstance(version, str):
-            recordsInGroup = [r for r in group.records if (r.project.name == project_name) and (r.group.name == group_name) and r.step == step and r.version == version]
+            filterGroups = [gr for gr in filterGroups if gr.version == version]
+        recordsInGroup = [r for g in filterGroups for r in g.records if r.step == step]
+        if isinstance(version, str):
+            recordsInGroup = [r for g in filterGroups for r in g.records if  r.step == step and r.version == version]
         return recordsInGroup
 
         
