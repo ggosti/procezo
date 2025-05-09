@@ -88,6 +88,10 @@ python -m doctest app/api/endpoints.py
 
 ## Running the App
 
+Star environment:
+```bash
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+```
 Start the app locally:
 ```bash
 python run.py
