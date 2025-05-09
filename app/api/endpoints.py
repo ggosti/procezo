@@ -8,15 +8,16 @@ router = APIRouter()
 
 @router.get("/api/projects/{step}")
 def list_projects(step: str):
-    return [(p.name,p.step) for p in data_container.projects if step == p.step]#.keys())
+    return [{"name":p.name, "step":p.step} for p in data_container.projects if step == p.step]#.keys())
 
 @router.get("/api/groups/{step}/{project_name}")
 def list_groups(step: str, project_name: str, ver: Optional[str] = Query(default=None)):
+    #print('list_groups',step,project_name,ver)
     groups = data_container.get_groups_in_project(project_name, step, ver)
-    print('groups',groups)
+    #print('groups',groups)
     if len(groups) == 0:
         return JSONResponse(content={"error": f"Not found groups in {project_name} at step {step}"}, status_code=404)
-    return [[g.name,g.step,g.version] for g in groups]
+    return [{"name":g.name, "step":g.step, "version":g.version} for g in groups]
 
 @router.get("/api/records/{step}/{project_name}/{group_name}")
 def list_records(step: str, project_name: str, group_name: str, ver: Optional[str] = Query(default=None)):

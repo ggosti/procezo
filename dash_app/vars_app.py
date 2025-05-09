@@ -24,22 +24,23 @@ def update_variable(pathname):
     if 'edit_group' in nameList: shift = shift + 1
     print('nameList update vars',nameList,length)
     if length > 1+shift:
-        projects = requests.get(f"{FASTAPI_URL}/projects/raw")
-        existing_project_names = [pr.name for pr in projects]
+        projects = requests.get(f"{FASTAPI_URL}/projects/raw").json()
+        print('projects',projects)
+        existing_project_names = [pr["name"] for pr in projects]
         print('existing_project_names',existing_project_names)
         project_name = '<None>' 
         if nameList[1+shift] in existing_project_names: #len(project_name) == 0:
             project_name = nameList[1+shift]
         print('project_name',project_name,len(project_name))
     if length > 2+shift:
-        groups = requests.get(f"{FASTAPI_URL}/groups/raw/{project_name}")
-        existing_group_names = [gr.name for gr in groups  ]
+        groups = requests.get(f"{FASTAPI_URL}/groups/raw/{project_name}").json()
+        existing_group_names = [gr["name"] for gr in groups  ]
         group_name = '<None>' 
         if nameList[2+shift] in existing_group_names:
             group_name = nameList[2+shift]
     if length > 3+shift: 
-        records = requests.get(f"{FASTAPI_URL}/records/raw/{project_name}/{group_name}")
-        existing_records_names = [re.name for re in records]
+        records = requests.get(f"{FASTAPI_URL}/records/raw/{project_name}/{group_name}").json()
+        existing_records_names = [re["name"] for re in records]
         print('record_name update',record_name, nameList[3],existing_records_names)
         if not nameList[3+shift] == 'group_proc':
             record_name = '<None>' 

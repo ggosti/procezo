@@ -12,8 +12,8 @@ def register_callbacks(dash_app):
         Input("project-dropdown", "id")  # dummy trigger
     )
     def load_projects(_):
-        r = requests.get(f"{FASTAPI_URL}/projects/raw")
-        return [{"label": p[0], "value": p[0]} for p in r.json()]
+        r = requests.get(f"{FASTAPI_URL}/projects/raw").json()
+        return [{"label": p["name"], "value": p["name"]} for p in r]
 
     # Populate group dropdown
     @dash_app.callback(
@@ -24,8 +24,8 @@ def register_callbacks(dash_app):
         #print("load_groups", project)
         if not project:
             return []
-        r = requests.get(f"{FASTAPI_URL}/groups/raw/{project}")
-        return [{"label": g[0], "value": g[0]} for g in r.json()]
+        r = requests.get(f"{FASTAPI_URL}/groups/raw/{project}").json()
+        return [{"label": g["name"], "value": g["name"]} for g in r]
 
     # Populate file dropdown
     @dash_app.callback(
