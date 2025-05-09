@@ -123,53 +123,57 @@ class Group:
     def set_ver(self, ver):
         self.version = ver
 
-    # def set_panoramic(self, panoramic):
-    #     self.panoramic = panoramic
-    #     if self.parsFileExists():
-    #         d = self.loadPars()
-    #     self.pars['panoramic'] = True
-    #     self.updateParFile()
+    def parsFileExists(self):
+        file = os.path.normpath(os.path.join( self.path,'pars.json') )
+        return os.path.isfile(file)
 
-    # def isParsLoaded(self):
-    #     return self.pars is not None
+    def loadPars(self):
+        file = os.path.normpath(os.path.join( self.path,'pars.json') )
+        self.pars_path = file
+        with open(file) as f:
+            pars = json.load(f)
+        #print("loaded pars",file,pars)
+        self.pars = pars
+        # TODO: we will need to check if an other proc version is added'
+        return pars
     
-    # def parsFileExists(self):
-    #     file = os.path.normpath(os.path.join( self.path,'pars.json') )
-    #     return os.path.isfile(file)
-    
-    # def loadPars(self):
-    #     if self.isParsLoaded():
-    #         pars = self.pars
-    #     else:
-    #         file = os.path.normpath(os.path.join( self.path,'pars.json') )
-    #         self.pars_path = file
-    #         with open(file) as f:
-    #             pars = json.load(f)
-    #         #print("loaded pars",file,pars)
-    #         self.pars = pars
-    #     # TODO: we will need to check if an other proc version is added'
-    #     return pars
-    
-    # def putPar(self):
-    #     file = os.path.normpath(os.path.join( self.path,'pars.json') )
-    #     print('putPar',file)
-    #     print('self.name',self.name,self.parent_group)
-    #     assert self.parent_group is not None, 'parent_group is None'
-    #     pars = {'group': self.parent_group.name,
-    #             'raw records folder': os.path.normpath(self.parent_group.path),
-    #             'raw records': [r.name for r in self.parent_group.records],
-    #             'bbox':{},
-    #             'preprocessedVRsessions':{} }
-    #     with open(file, 'w', encoding='utf-8') as f:
-    #         json.dump(pars, f, ensure_ascii=False, indent=4) 
-    #     self.pars = pars
-    #     return pars
-    
+    def putPar(self):
+        file = os.path.normpath(os.path.join( self.path,'pars.json') )
+        print('putPar',file)
+        print('self.name',self.name,self.parent_group)
+        assert self.parent_group is not None, 'parent_group is None'
+        pars = {'group': self.parent_group.name,
+                'raw records folder': os.path.normpath(self.parent_group.path),
+                'raw records': [r.name for r in self.parent_group.records],
+                'bbox':{},
+                'preprocessedVRsessions':{} }
+        with open(file, 'w', encoding='utf-8') as f:
+            json.dump(pars, f, ensure_ascii=False, indent=4) 
+        self.pars = pars
+        return pars
+
     # def updateParFile(self):
     #     file = os.path.normpath(os.path.join( self.path,'pars.json') )
     #     with open(file, 'w', encoding='utf-8') as f:
     #         json.dump(self.pars, f, ensure_ascii=False, indent=4) 
     #     return self.pars
+
+
+    def set_panoramic(self, panoramic):
+        self.panoramic = panoramic
+        if self.parsFileExists():
+            d = self.loadPars()
+        self.pars['panoramic'] = True
+        #self.updateParFile()
+
+
+    # def isParsLoaded(self):
+    #     return self.pars is not None
+    
+
+    
+
+    
 
 
 class Project:
@@ -523,6 +527,12 @@ class DataContainer:
                             if os.path.isdir(ver_path):
                                 group = Group(i, f"{group_name}", group_path, step)
                                 group.set_ver(ver)
+                                if group.parsFileExists():
+                                    pars = group.loadPars()
+                                else:
+                                    pars = group.putPar()
+                                print(group_name,'pars',pars.keys())
+                                if 'panoramic' in pars.keys(): group.set_panoramic(pars['panoramic'])
                                 group.project = project
                                 i = i + 1
                                 groupsInner.append(group)
@@ -567,3 +577,29 @@ class DataContainer:
         self.groups = groups
         self.records = records 
     
+
+    def update_put_group_pars(self,group):
+        # Check if group has a pars.json file and update it or create it
+        assert isinstance(group, Group) and group.step == 'proc', 'group must be a Group object and step must be proc'
+        #print('group.parent_group path',group.parent_group.path)
+        if group.parsFileExists():
+            pars = group.loadPars()
+        else:
+            pars = group.putPar()
+        #print('pars',pars)
+        keeperPath = os.path.normpath(os.path.join( group.path,group.version) ) # group.path +'/preprocessed-VR-sessions'
+        if not os.path.exists(keeperPath):
+            os.makedirs(keeperPath)
+        keepers = os.listdir(keeperPath)   
+        return pars,keepers
+
+    def update_put_groups_pars(self):
+        # Check if groups have a pars.json file and update it or create it
+        groups = self.groups
+        procGroups = [g for g in groups if (g.step == 'proc') and (g.version == 'preprocessed-VR-sessions')]
+        for group in procGroups:
+            pars,keepers = self.update_put_group_pars(group)
+            #print('keepers',keepers)
+            for g in group.records:
+                assert g.name+'.csv' in keepers, 'record '+g.name+' not in keepers'+str(keepers)
+
