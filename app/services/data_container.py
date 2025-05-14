@@ -152,11 +152,11 @@ class Group:
         self.pars = pars
         return pars
 
-    # def updateParFile(self):
-    #     file = os.path.normpath(os.path.join( self.path,'pars.json') )
-    #     with open(file, 'w', encoding='utf-8') as f:
-    #         json.dump(self.pars, f, ensure_ascii=False, indent=4) 
-    #     return self.pars
+    def updateParFile(self):
+        file = os.path.normpath(os.path.join( self.path,'pars.json') )
+        with open(file, 'w', encoding='utf-8') as f:
+            json.dump(self.pars, f, ensure_ascii=False, indent=4) 
+        return self.pars
 
 
     def set_panoramic(self, panoramic):

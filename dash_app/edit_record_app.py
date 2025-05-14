@@ -38,7 +38,9 @@ def get_record(step,project_name,group_name,record_name):
 def get_record_df(step,project_name,group_name,record_name):
     data = get_record(step,project_name,group_name,record_name)
     df = pd.DataFrame(data["rows"])
-    return df
+    timekey = data["timeKey"]
+    pars = data["pars"]
+    return df, timekey, pars
 
 
 def make_plot(df, t,plotLines,lineName,n,navAr,x_filter):  
@@ -273,7 +275,7 @@ def load_edpoints(data):
     x_filter = [tmin,tmax]
 
     if record_name is not None:  
-        dfS = get_record_df('raw',project_name,group_name,record_name)  
+        dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)  
         childRecords = requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
         if len(dfS.index):
             path = tsi.getPath(dfS,['posx','posy','posz'])
@@ -319,7 +321,7 @@ def load_plot(data,x_filter):
     record_name = dff['record_name']
     if record_name is not None:
         #print("record name",record_name)
-        dfS = get_record_df('raw',project_name,group_name,record_name)
+        dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
 
         print('columns',dfS.columns)
         nav = tsi.getVR(dfS)
@@ -354,7 +356,7 @@ def load_3d_plot(data,x_filter):
     group_name = dff['group_name']
     record_name = dff['record_name']
     if record_name is not None:
-        dfS = get_record_df('raw',project_name,group_name,record_name)
+        dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
 
         nav = tsi.getVR(dfS)
         navAr = tsi.getAR(dfS)
@@ -370,46 +372,38 @@ def load_3d_plot(data,x_filter):
 def upload_proc_edpoints(x_filter):
     return json.dumps({'values' : x_filter})
 
-# def save_records(n_clicks,data,endpointsString): #, value):
-#     #records = g.records
-#     x_filter = json.loads(endpointsString)["values"]
-#     print('n_clicks',n_clicks, x_filter )
-#     if n_clicks>0:
-#         print("Save ",data)
-#         dff = json.loads(data) #= pd.read_json(data)
-#         project_name = dff['project_name']
-#         group_name = dff['group_name']
-#         record_name = dff['record_name']
-#         print('dff',dff)
-#         if record_name is not None:
-#             rawRecord = projObj.get_record(project_name,group_name,record_name,'raw')
-#             procGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-#             assert len(rawRecord.child_records) < 2, "not ready for more then one!"
-#             dfS = rawRecord.data
-#             timeKey = rawRecord.timeKey  
-#             kDf = dfS[ (dfS[timeKey]>=x_filter[0]) * (dfS[timeKey]<=x_filter[1])]
-#             if len(rawRecord.child_records) == 0:
-#                 fName = record_name+'-preprocessed'
-#                 record_path = os.path.join(procGroup.path, 'preprocessed-VR-sessions',fName+'.csv')
-#                 #record_path = os.path.join(record_path, record_name+'-preprocessed.csv')
-#                 procRecord = projObj.add_record(rawRecord,procGroup,fName,record_path, kDf, version='preprocessed-VR-sessions')
-#                 # i = len(utils.records) + 1
-#                 # procRecord = Record(i, fName, record_path, 'proc',kDf) 
-#                 # procRecord.set_ver('preprocessed-VR-sessions')
-#                 # procRecord.group = procGroup
-#                 # procRecord.project = procGroup.project
-#                 # procGroup.add_record(procRecord)
-#                 # procRecord.parent_record = rawRecord
-#                 # rawRecord.add_child_record(procRecord)
-#                 # utils.records.append(procRecord)
-#             if len(rawRecord.child_records) == 1:  
-#                 procRecord = rawRecord.child_records[0]
-#                 #print('procRecord.group',procRecord.group.name,procRecord.group.pars,procRecord2.group.name,procRecord2.group.pars)
-#             #if not procRecord.group.parsFileExists():
-#             #    pars = rawRecord.group.putPar()
-#             kDf.to_csv(procRecord.path,index=False,na_rep='NA') #(keeperPath+'/'+fname+'-preprocessed.csv',index=False,na_rep='NA')
-#             procRecord.data = kDf
-#             procRecord.putProcRecordInProcFile()
+def save_records(n_clicks,data,endpointsString): #, value):
+    #records = g.records
+    x_filter = json.loads(endpointsString)["values"]
+    print('n_clicks',n_clicks, x_filter )
+    if n_clicks>0:
+        print("Save ",data)
+        dff = json.loads(data) #= pd.read_json(data)
+        project_name = dff['project_name']
+        group_name = dff['group_name']
+        record_name = dff['record_name']
+        print('dff',dff)
+        if record_name is not None:
+            # rawRecord = projObj.get_record(project_name,group_name,record_name,'raw')
+            # procGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
+            dfS, timeKey, pars = get_record_df('raw',project_name,group_name,record_name)
+            childRecords = requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
+            kDf = dfS[ (dfS[timeKey]>=x_filter[0]) * (dfS[timeKey]<=x_filter[1])]
+            if len(childRecords) == 0:
+                #fName = record_name+'-preprocessed'
+                #record_path = os.path.join(procGroup.path, 'preprocessed-VR-sessions',fName+'.csv')
+                #procRecord = projObj.add_record(rawRecord,procGroup,fName,record_path, kDf, version='preprocessed-VR-sessions')
+                version='preprocessed-VR-sessions'
+                requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{version}", json=kDf.to_dict(orient="records"))
+            if len(childRecords) == 1:  
+                procRecord = childRecords[0]
+                requests.put(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{procRecord.name}/{procRecord.version}", json=kDf.to_dict(orient="records"))
+                #print('procRecord.group',procRecord.group.name,procRecord.group.pars,procRecord2.group.name,procRecord2.group.pars)
+            #if not procRecord.group.parsFileExists():
+            #    pars = rawRecord.group.putPar()
+            kDf.to_csv(procRecord.path,index=False,na_rep='NA') #(keeperPath+'/'+fname+'-preprocessed.csv',index=False,na_rep='NA')
+            procRecord.data = kDf
+            procRecord.putProcRecordInProcFile()
 
 # def remove_record(n_clicks,data):
 #     print('n_clicks',n_clicks)
