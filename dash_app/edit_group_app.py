@@ -15,10 +15,6 @@ dash_app = dash.Dash(__name__, requests_pathname_prefix='/edit_group/') #,  exte
 register_callbacks_vars(dash_app)
 register_callbacks_group(dash_app)
 
-project_name = '<None>'
-group_name = '<None>'
-record_name = '<None>'
-
 
 layout1 = html.Div(
         [
@@ -54,6 +50,11 @@ layout1 = html.Div(
             html.Button('Save selected records', id='save-gate', n_clicks=0),
             dcc.Store(id='group-variables'),
         ])
+
+
+project_name = '<None>'
+group_name = '<None>'
+record_name = '<None>'
 
 dash_app.layout =  html.Div([
         # represents the browser address bar and doesn't render anything

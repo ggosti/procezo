@@ -45,4 +45,20 @@ def get_record_data(step: str, project_name: str, group_name: str, record_name: 
     return JSONResponse(content={"rows": record.to_dict()})
     
 
+@router.get("/api/record/summary/{step}/{project_name}/{group_name}/{record_name}")
+def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
+    record =  data_container.get_record(project_name,group_name,record_name,step,version=ver)
+    #print('record',record,'pars',record.pars)
+    if record is None:
+        return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
+    return record.pars
+
+@router.get("/api/record/children/{step}/{project_name}/{group_name}/{record_name}")
+def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
+    record =  data_container.get_record(project_name,group_name,record_name,step,version=ver)
+    #print('record',record)
+    children = record.child_records
+    if record is None:
+        return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
+    return [{"name":r.name,"step":r.step,"ver":r.version} for r in children] #record.child_records
 

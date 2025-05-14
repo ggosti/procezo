@@ -49,28 +49,28 @@ class Record:
     def set_ver(self, ver):
         self.version = ver
 
-    # def add_child_record(self, record):
-    #     self.child_records.append(record)
+    def add_child_record(self, record):
+        self.child_records.append(record)
 
-    # def isProcRecordInProcFile(self):
-    #     pars = self.group.loadPars()
-    #     return (self.name in pars['preprocessedVRsessions'].keys())
+    def isProcRecordInProcFile(self):
+        pars = self.group.loadPars()
+        return (self.name in pars['preprocessedVRsessions'].keys())
     
-    # def loadProcRecordFromProcFile(self):
-    #     pars = self.group.loadPars()
-    #     dfS = self.data[self.timeKey]
-    #     tInt = pars['preprocessedVRsessions'][self.name]['t0'],pars['preprocessedVRsessions'][self.name]['t1']
-    #     tInt1 = dfS.min(),dfS.max()
-    #     assert tInt==tInt1, ('mismatch error between csv and pars',self.name,'tInt',tInt,'tInt1',tInt1)
-    #     self.pars = pars['preprocessedVRsessions'][self.name]
+    def loadProcRecordFromProcFile(self):
+        pars = self.group.loadPars()
+        dfS = self.data[self.timeKey]
+        tInt = pars['preprocessedVRsessions'][self.name]['t0'],pars['preprocessedVRsessions'][self.name]['t1']
+        tInt1 = dfS.min(),dfS.max()
+        assert tInt==tInt1, ('mismatch error between csv and pars',self.name,'tInt',tInt,'tInt1',tInt1)
+        self.pars = pars['preprocessedVRsessions'][self.name]
 
-    # def putProcRecordInProcFile(self):
-    #     pars = self.group.loadPars()
-    #     dfS = self.data[self.timeKey]
-    #     tInt = float(dfS.min()),float(dfS.max())
-    #     pars['preprocessedVRsessions'][self.name] = {'t0':tInt[0],'t1':tInt[1]}
-    #     self.pars = pars['preprocessedVRsessions'][self.name]
-    #     self.group.updateParFile()
+    def putProcRecordInProcFile(self):
+        pars = self.group.loadPars()
+        dfS = self.data[self.timeKey]
+        tInt = float(dfS.min()),float(dfS.max())
+        pars['preprocessedVRsessions'][self.name] = {'t0':tInt[0],'t1':tInt[1]}
+        self.pars = pars['preprocessedVRsessions'][self.name]
+        self.group.updateParFile()
 
 class Group:
     """
@@ -404,32 +404,47 @@ class DataContainer:
         >>> processes = ['preprocessed-VR-sessions','preprocessed-VR-sessions-gated'] 
         >>> dataContainer = DataContainer(rawProjectsPath, procProjectsPath, allowedProjects, processes)
         >>> dataContainer.load_all('raw')
-        >>> [(p.id, p.name) for p in dataContainer.projects]
-        [(1, 'event1'), (2, 'event2')]
+        >>> [(p.id, p.name,type(p)) for p in dataContainer.projects]
+        [(1, 'event1', <class 'data_container.Project'>), (2, 'event2', <class 'data_container.Project'>)]
         >>> project = dataContainer.projects[0]
-        >>> [(g.id, g.name) for g in project.groups]
-        [(1, 'group1'), (2, 'group2')]
+        >>> [(g.id, g.name,type(g)) for g in project.groups]
+        [(1, 'group1', <class 'data_container.Group'>), (2, 'group2', <class 'data_container.Group'>)]
         >>> group = project.groups[0]
+        >>> r = group.records[0]
+        >>> type(r)
+        <class 'data_container.Record'>
         >>> [(r.id, r.name, r.step,r.version) for r in group.records]
         [(1, 'U1', 'raw', None), (2, 'U2', 'raw', None), (3, 'U3', 'raw', None), (4, 'U4', 'raw', None)]
+        >>> r = dataContainer.records[0]
+        >>> type(r)
+        <class 'data_container.Record'>
 
         >>> dataContainer.load_all('proc')
-        >>> [(p.id, p.name) for p in dataContainer.projects]
-        [(1, 'event1'), (2, 'event2')]
-        >>> project = dataContainer.projects[0]
-        >>> [(p.id, p.name) for p in dataContainer.projects]
-        [(1, 'event1'), (2, 'event2')]
+        >>> [(p.id, p.name, p.step) for p in dataContainer.projects]
+        [(1, 'event1', 'raw'), (2, 'event2', 'raw'), (3, 'event1', 'proc'), (4, 'event2', 'proc')]
+        >>> project = dataContainer.projects[2]
+        >>> type(project)
+        <class 'data_container.Project'>
         >>> [(g.id, g.name, g.project.name,g.step,g.version) for g in project.groups]
-        [(1, 'group1', 'event1', 'proc', 'preprocessed-VR-sessions'), (2, 'group1', 'event1', 'proc', 'preprocessed-VR-sessions-gated'), (3, 'group2', 'event1', 'proc', 'preprocessed-VR-sessions'), (4, 'group2', 'event1', 'proc', 'preprocessed-VR-sessions-gated')]
+        [(5, 'group1', 'event1', 'proc', 'preprocessed-VR-sessions'), (6, 'group1', 'event1', 'proc', 'preprocessed-VR-sessions-gated'), (7, 'group2', 'event1', 'proc', 'preprocessed-VR-sessions'), (8, 'group2', 'event1', 'proc', 'preprocessed-VR-sessions-gated')]
         >>> group = project.groups[0]
+        >>> type(group)
+        <class 'data_container.Group'>
         >>> [(r.id, r.name, r.step,r.version) for r in group.records]
-        [(1, 'U1-preprocessed', 'proc', 'preprocessed-VR-sessions'), (2, 'U2-preprocessed', 'proc', 'preprocessed-VR-sessions')]
-        
+        [(8, 'U1-preprocessed', 'proc', 'preprocessed-VR-sessions'), (9, 'U2-preprocessed', 'proc', 'preprocessed-VR-sessions')]
+        >>> r = group.records[0]
+        >>> type(r) 
+        <class 'data_container.Record'>
+        >>> r.group.name
+        'group1'
+        >>> r = dataContainer.records[0]
+        >>> type(r)
+        <class 'data_container.Record'>
 
         """
-        projects = self.projects
-        groups = self.groups
-        records = self.groups
+        #projects = self.projects
+        #groups = self.groups
+        #records = self.records
 
         # Create proc projects dir for each raw project dir if it does not exist
         #print('Create proc projects dir for each raw project dir if it does not exist',project_dir, step)
@@ -475,7 +490,7 @@ class DataContainer:
             project_dir = self.procProjectsPath
 
         projectsInner = []
-        i = len(projects) +1
+        i = len(self.projects) +1
         project_names = os.listdir(project_dir)
         project_names.sort()
         for project_name in project_names:
@@ -487,13 +502,13 @@ class DataContainer:
                 #print(project.name,project.step)
                 i = i + 1
                 projectsInner.append(project)
-        projects = projects + projectsInner
+        #projects = projects + projectsInner
         #print('projectsInner', [(p.id, p.name, p.path) for p in projectsInner])
         
 
         # Load groups
         groupsInner = []
-        i = len(groups) + 1
+        i = len(self.groups) + 1
         if step == 'raw':
             for project in projectsInner:
                 group_names = os.listdir(project.path)
@@ -531,19 +546,19 @@ class DataContainer:
                                     pars = group.loadPars()
                                 else:
                                     pars = group.putPar()
-                                print(group_name,'pars',pars.keys())
+                                #print(group_name,'pars',pars.keys())
                                 if 'panoramic' in pars.keys(): group.set_panoramic(pars['panoramic'])
                                 group.project = project
                                 i = i + 1
                                 groupsInner.append(group)
                                 project.add_group(group)  
-        groups = groups + groupsInner  
+        #groups = groups + groupsInner  
 
         # Load records
         recordsInner = []
-        i = len(records) + 1
+        i = len(self.records) + 1
         if step == 'raw':
-            for group in groups:
+            for group in groupsInner:
                 dfs = self.get_records(group.path)
                 for df,record_name,record_path in dfs:
                     record = Record(i, record_name, record_path, 'raw', df)
@@ -554,7 +569,7 @@ class DataContainer:
                     group.add_record(record)
 
         if step == 'proc':
-            for group in groups:
+            for group in groupsInner:
                 #for ver in os.listdir(group.path):
                 ver = group.version
                 #print(group.name,'ver',ver)
@@ -570,13 +585,69 @@ class DataContainer:
                             i = i + 1
                             recordsInner.append(record)
                             group.add_record(record)
-        records = records + recordsInner
+        #print('recordsInner', [(r.id, r.name, type(r)) for r in recordsInner])
+        #records = records + recordsInner
         
 
-        self.projects = projects
-        self.groups = groups
-        self.records = records 
+        self.projects = self.projects + projectsInner
+        self.groups = self.groups + groupsInner
+        self.records = self.records + recordsInner
     
+    def link_records(self):
+        """
+        Link record to parent record and child records.
+        
+        Parameters:
+        ----------
+        records : list of Record objects    
+        
+        Returns variables:
+        ------- 
+        records : list of Record objects
+            List of Record objects with linked parent and child records.
+        
+        
+        Example:
+        ---------
+        >>> rawProjectsPath = './test/records/raw/'
+        >>> procProjectsPath = './test/records/proc/'   
+        >>> allowedProjects = ['event1','event2'] 
+        >>> processes = ['preprocessed-VR-sessions','preprocessed-VR-sessions-gated'] 
+        >>> dataContainer = DataContainer(rawProjectsPath, procProjectsPath, allowedProjects, processes)
+        >>> dataContainer.load_all('raw')
+        >>> r = dataContainer.records[0]
+        >>> print('r',r.name,type(r))
+        r U1 <class 'data_container.Record'>
+        >>> dataContainer.load_all('proc')
+        >>> r = dataContainer.records[0]
+        >>> print('r1',r.name,r.group.name,r.project.name,r.step,r.version)
+        r1 U1 group1 event1 raw None
+        >>> r = dataContainer.records[1]
+        >>> print('r2',r.name,r.group.name,r.project.name,r.step,r.version)
+        r2 U2 group1 event1 raw None
+        >>> dataContainer.link_records()
+        >>> records = dataContainer.records
+        >>> [(r.id, r.name, r.step, r.version, r.parent_record.id, r.parent_record.name)  for r in records if r.parent_record is not None]        
+        [(8, 'U1-preprocessed', 'proc', 'preprocessed-VR-sessions', 1, 'U1'), (9, 'U2-preprocessed', 'proc', 'preprocessed-VR-sessions', 2, 'U2'), (10, 'U2-preprocessed', 'proc', 'preprocessed-VR-sessions-gated', 9, 'U2-preprocessed')]
+        
+        
+        """
+        # link records to parent record and child records
+        for r in self.records:
+            if r.step == 'raw':
+                #print('r',r.name,r.group.name,r.project.name,r.step,r.version)
+                for r2 in self.records:
+                    #if (r2.step == 'proc') and (r2.project.name == r.project.name) and (r2.group.name == r.group.name) and (r2.name.startswith(r.name)) and (r2.version == 'preprocessed-VR-sessions'):
+                    #    print('r2',r2.name,r2.group.name,r2.project.name,r2.step,r2.version,r2.name.startswith(r.name))
+                    if (r2.step == 'proc') and (r2.project.name == r.project.name) and (r2.group.name == r.group.name) and (r2.name.startswith(r.name)) and (r2.version == 'preprocessed-VR-sessions'):
+                        r2.parent_record = r
+                        r.add_child_record(r2)
+                        #print('r2',r2.id,r2.name,r2.group.name,r2.project.name,r2.step,r2.version,r.child_records)
+            if r.step == 'proc' and r.version == 'preprocessed-VR-sessions':
+                for r2 in self.records:
+                    if (r2.step == 'proc') and (r2.project.name == r.project.name) and (r2.group.name == r.group.name) and (r2.name.startswith(r.name)) and (r2.version == 'preprocessed-VR-sessions-gated'):
+                        r2.parent_record = r
+                        r.add_child_record(r2)
 
     def update_put_group_pars(self,group):
         # Check if group has a pars.json file and update it or create it
@@ -603,3 +674,32 @@ class DataContainer:
             for g in group.records:
                 assert g.name+'.csv' in keepers, 'record '+g.name+' not in keepers'+str(keepers)
 
+    def update_put_record_pars(self,record):#,keepers):
+        #find out if allready preprocessed. If trough check if csv and info in json match
+        # Check if record group has a pars.json file and update it or create it
+        assert isinstance(record, Record) and record.step == 'proc', 'record must be a Record object and step must be proc'
+        assert record.group.parsFileExists(), 'it is assumed that pars are loaded in the group before that in the record with update_put_group_pars or update_put_groups_pars'
+        if record.isProcRecordInProcFile():
+            record.loadProcRecordFromProcFile()
+        else:
+            record.putProcRecordInProcFile()
+
+    def update_put_records_pars(self):
+        procRecords = [r for r in self.records if (r.step == 'proc') and (r.version == 'preprocessed-VR-sessions')]
+        for record in procRecords:
+            self.update_put_record_pars(record)
+
+if __name__ == "__main__":
+    rawProjectsPath = './test/records/raw/'
+    procProjectsPath = './test/records/proc/'   
+    allowedProjects = ['event1','event2'] 
+    processes = ['preprocessed-VR-sessions','preprocessed-VR-sessions-gated'] 
+    dataContainer = DataContainer(rawProjectsPath, procProjectsPath, allowedProjects, processes)
+    dataContainer.load_all('raw')
+
+    print('projects')
+    print([(p.id, p.name,type(p)) for p in dataContainer.projects])
+    print('groups')
+    print([(g.id, g.name,type(g)) for g in dataContainer.groups])
+    print('records')
+    print([(r.id, r.name,type(r)) for r in dataContainer.records])
