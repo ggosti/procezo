@@ -345,7 +345,7 @@ class DataContainer:
             procGroup = record.group
             strVer = verDict[record.version]
             print('remove name',record.name)
-            if procGroup.isParsLoaded():
+            if isinstance(procGroup.pars, dict):
                 print('keys',procGroup.pars[strVer].keys()) #print('keys',procGroup.pars['preprocessedVRsessions'].keys())
                 del procGroup.pars[strVer][record.name] #del procGroup.pars['preprocessedVRsessions'][record.name]
                 print('keys',procGroup.pars[strVer].keys()) #print('keys',procGroup.pars['preprocessedVRsessions'].keys())

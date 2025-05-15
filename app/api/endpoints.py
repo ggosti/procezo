@@ -115,3 +115,13 @@ def update_record_data(
     procRecord.data = kDf
     procRecord.putProcRecordInProcFile()
     return JSONResponse(content={"status": "ok"}, status_code=200)
+
+@router.delete("/record/proc/{project_name}/{group_name}/{record_name}/{verion_name}")
+def delete_record(project_name: str, group_name: str, record_name: str, verion_name: str):
+    #print('delete_record',project_name,group_name,record_name,verion_name)
+    procRecord =  data_container.get_record(project_name,group_name,record_name,'proc',version=verion_name)
+    if procRecord is None:
+        return JSONResponse(content={"error": f"Not found record {record_name} version {verion_name}: in {project_name}/{group_name}  at step proc"}, status_code=404)
+    os.remove(procRecord.path)
+    data_container.remove_record(procRecord)
+    return JSONResponse(content={"status": "ok"}, status_code=200)

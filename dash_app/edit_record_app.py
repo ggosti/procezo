@@ -374,6 +374,7 @@ def upload_proc_edpoints(x_filter):
 
 def save_records(n_clicks,data,endpointsString): #, value):
     #records = g.records
+    print('save_records') 
     x_filter = json.loads(endpointsString)["values"]
     print('n_clicks',n_clicks, x_filter )
     if n_clicks>0:
@@ -395,40 +396,50 @@ def save_records(n_clicks,data,endpointsString): #, value):
                 #procRecord = projObj.add_record(rawRecord,procGroup,fName,record_path, kDf, version='preprocessed-VR-sessions')
                 version='preprocessed-VR-sessions'
                 requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{version}", json=kDf.to_dict(orient="records"))
+                #return f"Posted record in {project_name}/{group_name}/{record_name} at step proc version {version}" 
             if len(childRecords) == 1:  
                 procRecord = childRecords[0]
-                requests.put(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{procRecord.name}/{procRecord.version}", json=kDf.to_dict(orient="records"))
+                print('procRecord',procRecord)
+                record_name = procRecord['name']
+                record_ver = procRecord['ver']
+                requests.put(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{record_ver}", json=kDf.to_dict(orient="records"))
+                #return f"Puted record in {project_name}/{group_name}/{record_name} at step proc version {record_ver}" 
                 #print('procRecord.group',procRecord.group.name,procRecord.group.pars,procRecord2.group.name,procRecord2.group.pars)
             #if not procRecord.group.parsFileExists():
             #    pars = rawRecord.group.putPar()
-            kDf.to_csv(procRecord.path,index=False,na_rep='NA') #(keeperPath+'/'+fname+'-preprocessed.csv',index=False,na_rep='NA')
-            procRecord.data = kDf
-            procRecord.putProcRecordInProcFile()
+            # kDf.to_csv(procRecord.path,index=False,na_rep='NA') #(keeperPath+'/'+fname+'-preprocessed.csv',index=False,na_rep='NA')
+            # procRecord.data = kDf
+            # procRecord.putProcRecordInProcFile()
+    return f"Puted record in {project_name}/{group_name}/{record_name} at step proc version {record_ver}" 
+    
 
-# def remove_record(n_clicks,data):
-#     print('n_clicks',n_clicks)
-#     if n_clicks>0:
-#         print("Remove ",data)
-#         dff = json.loads(data) #= pd.read_json(data)
-#         project_name = dff['project_name']
-#         group_name = dff['group_name']
-#         record_name = dff['record_name']
-#         print('dff',dff)
-#         if record_name is not None:
-#             record = projObj.get_record(project_name,group_name,record_name+'-preprocessed','proc',version='preprocessed-VR-sessions')
-#             projObj.remove_record(record)
-#             # procRecord = projObj.get_record(project_name,group_name,record_name+'-preprocessed','proc',version='preprocessed-VR-sessions')
-#             # print('procRecord',procRecord)
-#             # if procRecord is not None:
-#             #    procGroup = procRecord.group
-#             #    print('keys',procGroup.pars['preprocessedVRsessions'].keys())
-#             #    print('remove name',procRecord.name)
-#             #    del procGroup.pars['preprocessedVRsessions'][procRecord.name]
-#             #    print('keys',procGroup.pars['preprocessedVRsessions'].keys())
-#             #    procGroup.updateParFile()
-#             #    os.remove(procRecord.path)
-#             #    utils.records.remove(procRecord)
-#     #return [0.0, 3600.0]
+def remove_record(n_clicks,data):
+    print('n_clicks',n_clicks)
+    if n_clicks>0:
+        print("Remove ",data)
+        dff = json.loads(data) #= pd.read_json(data)
+        project_name = dff['project_name']
+        group_name = dff['group_name']
+        record_name = dff['record_name']
+        print('dff',dff)
+        if record_name is not None:
+            version='preprocessed-VR-sessions'
+            requests.delete(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{version}")
+            # record = projObj.get_record(project_name,group_name,record_name+'-preprocessed','proc',version='preprocessed-VR-sessions')
+            # projObj.remove_record(record)
+            # procRecord = projObj.get_record(project_name,group_name,record_name+'-preprocessed','proc',version='preprocessed-VR-sessions')
+            # print('procRecord',procRecord)
+            # if procRecord is not None:
+            #    procGroup = procRecord.group
+            #    print('keys',procGroup.pars['preprocessedVRsessions'].keys())
+            #    print('remove name',procRecord.name)
+            #    del procGroup.pars['preprocessedVRsessions'][procRecord.name]
+            #    print('keys',procGroup.pars['preprocessedVRsessions'].keys())
+            #    procGroup.updateParFile()
+            #    os.remove(procRecord.path)
+            #    utils.records.remove(procRecord)
+    return [0.0, 3600.0]
+
 
 def init_callbacks(app):
 
@@ -477,17 +488,17 @@ def init_callbacks(app):
     )(load_3d_plot)
     app.callback(
         Output("x-slider-proc-endpoints", "children"),
-        Input("x-slider", "value"),
+        Input("x-slider", "value")
     )(upload_proc_edpoints)
+    app.callback(
+       Output('container-button-basic', 'children'),
+       Input('save-val', 'n_clicks'),
+       State('variables', 'data'),
+       State('x-slider-proc-endpoints', 'children'),
+       prevent_initial_call=True
+    )(save_records)
     # app.callback(
-    #     #Output('container-button-basic', 'children'),
-    #     Input('save-val', 'n_clicks'),
-    #     State('variables', 'data'),
-    #     State('x-slider-proc-endpoints', 'children'),
-    #     prevent_initial_call=True
-    # )(save_records)
-    # app.callback(
-    #     #Output("x-slider", "value"),
+    #     Output("x-slider", "value"),
     #     Input('remove-rec', 'n_clicks'),
     #     State('variables', 'data'),
     #     prevent_initial_call=True
@@ -521,9 +532,12 @@ layout1 = html.Div(
             html.P(id="proc-folder",children="Save in: preprocessed-VR-sessions"), # In futire to change folder name html.Div(dcc.Input(id='input-on-submit', type='text')),
             html.Button('Save', id='save-val', n_clicks=0),
             html.Button('Remove', id='remove-rec', n_clicks=0),
+            html.Div(id='container-button-basic',
+                children='Enter a roi and save it'),
             dcc.Graph(id="3d-record-plot"),
             # dcc.Store stores record variable: project_name, group_name, record_name
             dcc.Store(id='record-variables')
+            
         ])
 
 project_name = '<None>'
