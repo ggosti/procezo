@@ -88,10 +88,8 @@ def store_record_data(
     #print('record',record)
     fName = record_name+'-preprocessed'
     record_path = os.path.join(procGroup.path, 'preprocessed-VR-sessions',fName+'.csv')
-    procRecord = data_container.add_record(rawRecord,procGroup,fName,record_path, kDf, version=verion_name)
-    kDf.to_csv(procRecord.path,index=False,na_rep='NA') #(keeperPath+'/'+fname+'-preprocessed.csv',index=False,na_rep='NA')
-    procRecord.data = kDf
-    procRecord.putProcRecordInProcFile()
+    data_container.add_record(procGroup,fName,record_path, kDf, saveFile=True, version=verion_name, parent_record = rawRecord)
+
     return JSONResponse(content={"status": "ok"}, status_code=200)
 
 @router.put("/api/record/proc/{project_name}/{group_name}/{record_name}/preprocessed-VR-sessions")
@@ -116,7 +114,7 @@ def update_record_data(
     procRecord.putProcRecordInProcFile()
     return JSONResponse(content={"status": "ok"}, status_code=200)
 
-@router.delete("/record/proc/{project_name}/{group_name}/{record_name}/{verion_name}")
+@router.delete("/api/record/proc/{project_name}/{group_name}/{record_name}/{verion_name}")
 def delete_record(project_name: str, group_name: str, record_name: str, verion_name: str):
     #print('delete_record',project_name,group_name,record_name,verion_name)
     procRecord =  data_container.get_record(project_name,group_name,record_name,'proc',version=verion_name)

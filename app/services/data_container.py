@@ -58,6 +58,7 @@ class Record:
     
     def loadProcRecordFromProcFile(self):
         pars = self.group.loadPars()
+        #print('timeKey',self.timeKey)
         dfS = self.data[self.timeKey]
         tInt = pars['preprocessedVRsessions'][self.name]['t0'],pars['preprocessedVRsessions'][self.name]['t1']
         tInt1 = dfS.min(),dfS.max()
@@ -66,6 +67,7 @@ class Record:
 
     def putProcRecordInProcFile(self):
         pars = self.group.loadPars()
+        print('timeKey',self.timeKey)
         dfS = self.data[self.timeKey]
         tInt = float(dfS.min()),float(dfS.max())
         pars['preprocessedVRsessions'][self.name] = {'t0':tInt[0],'t1':tInt[1]}
@@ -326,18 +328,27 @@ class DataContainer:
         else:
             return []
         
-    def add_record(self,parent_record,group,fName,record_path, data, version):
+    def add_record(self,group,fName,record_path, data, saveFile=False, version = None, parent_record=None):
         i = len(self.records) + 1
-        print('data',data)
-        newRecord = Record(i, fName, record_path, 'proc', data) 
-        newRecord.set_ver(version) #'preprocessed-VR-sessions-gated')
+        #print('data',data)
+        newRecord = Record(i, fName, record_path, group.step, data) 
+        if version is not None:
+            newRecord.set_ver(version) #'preprocessed-VR-sessions-gated')
+
         newRecord.group = group #ungatedGroup
         newRecord.project = group.project #ungatedGroup.project
         group.add_record(newRecord) #ungatedGroup.add_record(ungatedRecord)
-        newRecord.parent_record = parent_record
-        parent_record.add_child_record(newRecord)
+
+        if saveFile:
+            data.to_csv(newRecord.path,index=False,na_rep='NA') #(keeperPath+'/'+fname+'-preprocessed.csv',index=False,na_rep='NA')
+            newRecord.putProcRecordInProcFile()
+
+        if parent_record is not None:
+            newRecord.parent_record = parent_record
+            parent_record.add_child_record(newRecord)
+            self.records.append(newRecord)
+        
         self.records.append(newRecord)
-        return newRecord
     
     def remove_record(self,record):
         verDict = {'preprocessed-VR-sessions':'preprocessedVRsessions','preprocessed-VR-sessions-gated':'preprocessedVRsessions-gated'}
@@ -555,18 +566,19 @@ class DataContainer:
         #groups = groups + groupsInner  
 
         # Load records
-        recordsInner = []
+        #recordsInner = []
         i = len(self.records) + 1
         if step == 'raw':
             for group in groupsInner:
                 dfs = self.get_records(group.path)
                 for df,record_name,record_path in dfs:
-                    record = Record(i, record_name, record_path, 'raw', df)
-                    record.group = group
-                    record.project = group.project
-                    i = i + 1
-                    recordsInner.append(record)
-                    group.add_record(record)
+                    self.add_record(group,record_name,record_path, df)
+                    #record = Record(i, record_name, record_path, 'raw', df)
+                    #record.group = group
+                    #record.project = group.project
+                    #i = i + 1
+                    #recordsInner.append(record)
+                    #group.add_record(record)
 
         if step == 'proc':
             for group in groupsInner:
@@ -577,21 +589,15 @@ class DataContainer:
                     ver_path = os.path.join(group.path, ver)
                     if os.path.isdir(ver_path):
                         dfs = self.get_records(ver_path)
-                        for df,record_name,record_path in dfs:
-                            record = Record(i, record_name, record_path, 'proc',df)
-                            record.set_ver(ver)
-                            record.group = group
-                            record.project = group.project
-                            i = i + 1
-                            recordsInner.append(record)
-                            group.add_record(record)
+                        for df,record_name,record_path in dfs:                            
+                            self.add_record(group,record_name,record_path, df,version=ver)
         #print('recordsInner', [(r.id, r.name, type(r)) for r in recordsInner])
         #records = records + recordsInner
         
 
         self.projects = self.projects + projectsInner
         self.groups = self.groups + groupsInner
-        self.records = self.records + recordsInner
+        #self.records = self.records + recordsInner
     
     def link_records(self):
         """
