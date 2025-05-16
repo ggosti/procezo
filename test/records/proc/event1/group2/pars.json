@@ -5,6 +5,11 @@
         "abc"
     ],
     "bbox": {},
-    "preprocessedVRsessions": {},
+    "preprocessedVRsessions": {
+        "U5-preprocessed": {
+            "t0": 5.0,
+            "t1": 35.0
+        }
+    },
     "panoramic": true
 }
