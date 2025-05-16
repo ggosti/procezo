@@ -12,10 +12,6 @@ from dash_app.callbacks import register_callbacks_vars , register_callbacks_grou
 
 dash_app = dash.Dash(__name__, requests_pathname_prefix='/edit_group/') #,  external_stylesheets=[dbc.themes.BOOTSTRAP]  )
 
-register_callbacks_vars(dash_app)
-register_callbacks_group(dash_app)
-
-
 layout1 = html.Div(
         [
             html.H1(children="Group Proc.", style={"textAlign": "center"}),
@@ -24,6 +20,7 @@ layout1 = html.Div(
                               + "Records in a group are gated according to time duration and variance."),
             html.P(id='group-vars'), #dcc.Store(id='variables')
             dcc.Checklist(["Panoramic"], [], id="panoramic-checklist", inline=True),
+            html.P(id="panoramic-checklist-dialog" ,children= ""),
             html.P(children= "Preprocessed records pre-gate:"),
             html.P(id="preprocessed-record-names", children= "< None >"),
             dcc.Graph(id="scatter-plot"),
@@ -69,4 +66,7 @@ dash_app.layout =  html.Div([
         dcc.Store(id='variables'),
 ])
 
+
+register_callbacks_vars(dash_app)
+register_callbacks_group(dash_app)
 

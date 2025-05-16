@@ -270,6 +270,24 @@ class DataContainer:
             return group
         else:
             return None
+        
+    def patch_group(self,project_name, group_name, step, ver, update_data):
+        project = self.get_project(project_name,step)
+        #print('project',project.name,project.step,project.groups)
+        filterGroups = [gr for gr in project.groups if (gr.name == group_name)]
+        if isinstance(ver, str):
+            filterGroups = [gr for gr in filterGroups if gr.version == ver]
+
+        if len(filterGroups) == 1:
+            group = filterGroups[0]
+            for key, value in update_data.items():
+                if hasattr(group, key):
+                    setattr(group, key, value)
+                else:
+                    raise ValueError(f"Attribute {key} not found in Group")
+            return group
+        else:
+            return None
     
     def get_record(self,project_name,group_name,record_name,step,version=None):
         group = self.get_group(project_name,group_name,step,version)

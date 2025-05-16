@@ -1,6 +1,8 @@
 from typing import Optional
 
-from fastapi import APIRouter,Query
+from pydantic import BaseModel
+
+from fastapi import APIRouter,Query, Body
 from fastapi.responses import JSONResponse
 from app.core.state import data_container
 
@@ -28,10 +30,33 @@ def get_group_data(project_name: str, group_name: str, ver: str):
     step = 'proc'
     #print('list_groups',step,project_name,ver)
     group = data_container.get_group(project_name, group_name, step, ver)
-    print('groups',group.name,group.version,group.project.name,group.panoramic)
     if group is None:
         return JSONResponse(content={"error": f"Not found group {group_name} in {project_name} at step {step}"}, status_code=404)
+    print('groups',group.name,group.version,group.project.name,group.panoramic)
     return {"name":group.name, "step":group.step, "version":group.version, "panoramic":group.panoramic}
+
+class GroupPatch(BaseModel):
+    panoramic: Optional[bool] = None
+    # Add other fields as needed, all optional
+
+@router.patch("/api/group/proc/{project_name}/{group_name}/{ver}")
+def update_group_panoramic(
+    project_name: str,
+    group_name: str,
+    ver: str,
+    patch: GroupPatch = Body(...)
+):
+    # update only the panoramic field
+    step = 'proc'
+    #print('list_groups',step,project_name,ver)
+    update_data = patch.model_dump(exclude_unset=True)
+    print('update_data',update_data)
+    group = data_container.patch_group(project_name, group_name, step, ver, update_data)
+    if group is None:
+        return JSONResponse(content={"error": "Group not found"}, status_code=404)
+    return {"status": "ok", "updated": update_data}
+    
+    
 
 @router.get("/api/records/{step}/{project_name}/{group_name}")
 def list_records(step: str, project_name: str, group_name: str, ver: Optional[str] = Query(default=None)):
@@ -47,23 +72,6 @@ def get_record_data(step: str, project_name: str, group_name: str, record_name: 
     if record is None:
         return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
     return JSONResponse(content={"rows": record.to_dict(),"timeKey": record.timeKey,"pars":record.pars}, status_code=200)
-
-@router.get("/api/record/summary/{step}/{project_name}/{group_name}/{record_name}")
-def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
-    record =  data_container.get_record(project_name,group_name,record_name,step,version=ver)
-    #print('record',record,'pars',record.pars)
-    if record is None:
-        return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
-    return record.pars
-
-@router.get("/api/record/children/{step}/{project_name}/{group_name}/{record_name}")
-def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
-    record =  data_container.get_record(project_name,group_name,record_name,step,version=ver)
-    #print('record',record)
-    children = record.child_records
-    if record is None:
-        return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
-    return [{"name":r.name,"step":r.step,"ver":r.version} for r in children] #record.child_records
 
 @router.post("/api/record/proc/{project_name}/{group_name}/{record_name}/preprocessed-VR-sessions")
 def store_record_data(
@@ -123,3 +131,22 @@ def delete_record(project_name: str, group_name: str, record_name: str, verion_n
     os.remove(procRecord.path)
     data_container.remove_record(procRecord)
     return JSONResponse(content={"status": "ok"}, status_code=200)
+
+
+@router.get("/api/record/summary/{step}/{project_name}/{group_name}/{record_name}")
+def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
+    record =  data_container.get_record(project_name,group_name,record_name,step,version=ver)
+    #print('record',record,'pars',record.pars)
+    if record is None:
+        return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
+    return record.pars
+
+@router.get("/api/record/children/{step}/{project_name}/{group_name}/{record_name}")
+def get_record_data(step: str, project_name: str, group_name: str, record_name: str, ver: Optional[str] = Query(default=None)):
+    record =  data_container.get_record(project_name,group_name,record_name,step,version=ver)
+    #print('record',record)
+    children = record.child_records
+    if record is None:
+        return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
+    return [{"name":r.name,"step":r.step,"ver":r.version} for r in children] #record.child_records
+

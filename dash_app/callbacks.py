@@ -87,31 +87,35 @@ def register_callbacks_vars(app):
         if 'edit_record' in nameList: shift = shift + 1
         if 'edit_group' in nameList: shift = shift + 1
         print('nameList update vars',nameList,length)
-        if length > 1+shift:
-            projects = requests.get(f"{FASTAPI_URL}/projects/raw").json()
-            print('projects',projects)
-            existing_project_names = [pr["name"] for pr in projects]
-            print('existing_project_names',existing_project_names)
-            project_name = '<None>' 
-            if nameList[1+shift] in existing_project_names: #len(project_name) == 0:
-                project_name = nameList[1+shift]
-            print('project_name',project_name,len(project_name))
-        if length > 2+shift:
-            groups = requests.get(f"{FASTAPI_URL}/groups/raw/{project_name}").json()
-            existing_group_names = [gr["name"] for gr in groups  ]
-            group_name = '<None>' 
-            if nameList[2+shift] in existing_group_names:
-                group_name = nameList[2+shift]
-        if length > 3+shift: 
-            records = requests.get(f"{FASTAPI_URL}/records/raw/{project_name}/{group_name}").json()
-            existing_records_names = [re["name"] for re in records]
-            print('record_name update',record_name, nameList[3],existing_records_names)
-            if not nameList[3+shift] == 'group_proc':
-                record_name = '<None>' 
-                if nameList[3+shift] in existing_records_names:
-                    record_name = nameList[3+shift]
-            print(record_name)
-        return f"Project: {project_name}",f"Group: {group_name}",f"Record: {record_name}"
+        try:
+            if length > 1+shift:
+                projects = requests.get(f"{FASTAPI_URL}/projects/raw").json()
+                print('projects',projects)
+                existing_project_names = [pr["name"] for pr in projects]
+                print('existing_project_names',existing_project_names)
+                project_name = '<None>' 
+                if nameList[1+shift] in existing_project_names: #len(project_name) == 0:
+                    project_name = nameList[1+shift]
+                print('project_name',project_name,len(project_name))
+            if length > 2+shift:
+                groups = requests.get(f"{FASTAPI_URL}/groups/raw/{project_name}").json()
+                existing_group_names = [gr["name"] for gr in groups  ]
+                group_name = '<None>' 
+                if nameList[2+shift] in existing_group_names:
+                    group_name = nameList[2+shift]
+            if length > 3+shift: 
+                records = requests.get(f"{FASTAPI_URL}/records/raw/{project_name}/{group_name}").json()
+                existing_records_names = [re["name"] for re in records]
+                print('record_name update',record_name, nameList[3],existing_records_names)
+                if not nameList[3+shift] == 'group_proc':
+                    record_name = '<None>' 
+                    if nameList[3+shift] in existing_records_names:
+                        record_name = nameList[3+shift]
+                print(record_name)
+            return f"Project: {project_name}",f"Group: {group_name}",f"Record: {record_name}"
+        except Exception as e:
+            print('Error in update_variable',e)
+            return f"Error in update_variable: {str(e)}"
     @app.callback(
         Output("variables", "data"),  
         Input('url', 'pathname'),
@@ -797,45 +801,49 @@ def register_callbacks_group(app):
             #records = projObj.get_recods_in_project_and_group(project_name,group_name,step='proc',version='preprocessed-VR-sessions')
             records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
             fileNames = [re["name"] for re in records]
+            print('records',fileNames)
             #fileNames, dfSs  = loadData(group_name,project_name,version='preprocessed-VR-sessions')
             return str(fileNames)
         else:
             return str(None)
         
-    @app.callback(
-        Output("panoramic-checklist","value"),
-        Input("variables", "data"),
-    )
-    def setPanoramiCheckValuse(data):
-        dff = json.loads(data) #= pd.read_json(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
-        value=[]
-        #rawGroup = projObj.get_group(project_name,group_name,'raw')
-        #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-        pregatedGroup = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
-        value = pregatedGroup["panoramic"]
-        return value
-    
     # @app.callback(
-    #     State("variables", "data"),
-    #     Input("panoramic-checklist","value"),
+    #     Output("panoramic-checklist","value"),
+    #     Input("variables", "data"),
     # )
-    # def getPanoramiCheckValuse(data,value):
+    # def setPanoramiCheckValuse(data):
+    #     print("Starting setPanoramiCheckValuse callback",data)
     #     dff = json.loads(data) #= pd.read_json(data)
     #     project_name = dff['project_name']
     #     group_name = dff['group_name']
-    #     #rawGroup = projObjInt.get_group(project_name,group_name,'raw')
-    #     pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-    #     if pregatedGroup.parsFileExists():
-    #         d = pregatedGroup.loadPars()
-    #         if 'panoramic' in d:
-    #             value = ["Panoramic"]
-    #     #print(value)
-    #     if "Panoramic" in value:
-    #         #print("Panoramic")
-    #         #rawGroup.set_panoramic(True)
-    #         pregatedGroup.set_panoramic(True)
+    #     #value=[]
+    #     #rawGroup = projObj.get_group(project_name,group_name,'raw')
+    #     #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
+    #     pregatedGroup = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
+    #     value = pregatedGroup["panoramic"]
+    #     print('pregatedGroup',pregatedGroup,value)
+    #     return value
+    
+    # @app.callback(
+    #     Output("panoramic-checklist-dialog","children"),
+    #     State("variables", "data"),
+    #     Input("panoramic-checklist","value"),
+    #     prevent_initial_call=True
+    # )
+    # def patchPanoramiCheckValuse(data, value):
+    #     dff = json.loads(data)
+    #     project_name = dff['project_name']
+    #     group_name = dff['group_name']
+    #     jsonData = json.dumps({'panoramic': value})
+    #     resp = requests.patch(
+    #         f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions",
+    #         data=jsonData,
+    #         headers={"Content-Type": "application/json"}
+    #     )
+    #     if resp.status_code == 200:
+    #         return "Panoramic value updated successfully."
+    #     else:
+    #         return f"Failed to update panoramic value: {resp.status_code} - {resp.text}"
     
     # @app.callback(
     #     Output("scatter-plot", "figure"), 
