@@ -70,3 +70,6 @@ dash_app.layout =  html.Div([
 register_callbacks_vars(dash_app)
 register_callbacks_group(dash_app)
 
+if __name__ == "__main__":
+    app.run_server(debug=True, port=8050)
+

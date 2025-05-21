@@ -785,7 +785,7 @@ def register_callbacks_group(app):
         Input("variables", "data"),
     )
     def getVars2(data):
-        #print(data)
+        print("data getVars2",data)
         return (data)
     
     @app.callback(
@@ -807,43 +807,49 @@ def register_callbacks_group(app):
         else:
             return str(None)
         
-    # @app.callback(
-    #     Output("panoramic-checklist","value"),
-    #     Input("variables", "data"),
-    # )
-    # def setPanoramiCheckValuse(data):
-    #     print("Starting setPanoramiCheckValuse callback",data)
-    #     dff = json.loads(data) #= pd.read_json(data)
-    #     project_name = dff['project_name']
-    #     group_name = dff['group_name']
-    #     #value=[]
-    #     #rawGroup = projObj.get_group(project_name,group_name,'raw')
-    #     #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-    #     pregatedGroup = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
-    #     value = pregatedGroup["panoramic"]
-    #     print('pregatedGroup',pregatedGroup,value)
-    #     return value
+    @app.callback(
+        Output("panoramic-checklist","value"),
+        Input("variables", "data"),
+    )
+    def setPanoramiCheckValuse(data):
+        print("Starting setPanoramiCheckValuse callback",data)
+        dff = json.loads(data) #= pd.read_json(data)
+        project_name = dff['project_name']
+        group_name = dff['group_name']
+        value=[]
+        #rawGroup = projObj.get_group(project_name,group_name,'raw')
+        #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
+        pregatedGroup = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
+        if pregatedGroup["panoramic"]:
+            value = ["Panoramic"]
+        print('pregatedGroup',pregatedGroup,value)
+        return value
     
-    # @app.callback(
-    #     Output("panoramic-checklist-dialog","children"),
-    #     State("variables", "data"),
-    #     Input("panoramic-checklist","value"),
-    #     prevent_initial_call=True
-    # )
-    # def patchPanoramiCheckValuse(data, value):
-    #     dff = json.loads(data)
-    #     project_name = dff['project_name']
-    #     group_name = dff['group_name']
-    #     jsonData = json.dumps({'panoramic': value})
-    #     resp = requests.patch(
-    #         f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions",
-    #         data=jsonData,
-    #         headers={"Content-Type": "application/json"}
-    #     )
-    #     if resp.status_code == 200:
-    #         return "Panoramic value updated successfully."
-    #     else:
-    #         return f"Failed to update panoramic value: {resp.status_code} - {resp.text}"
+    @app.callback(
+        Output("panoramic-checklist-dialog","children"),
+        State("variables", "data"),
+        Input("panoramic-checklist","value"),
+        prevent_initial_call=True
+    )
+    def patchPanoramiCheckValuse(data, value):
+        dff = json.loads(data)
+        project_name = dff['project_name']
+        group_name = dff['group_name']
+        print("check valuse",value)
+        if 'Panoramic' in value:
+            jsonData = json.dumps({'panoramic': True})
+        else:
+            jsonData = json.dumps({'panoramic': False})
+        print("jsonData",jsonData)
+        resp = requests.patch(
+            f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions",
+            data=jsonData,
+            headers={"Content-Type": "application/json"}
+        )
+        if resp.status_code == 200:
+            return "Panoramic value updated successfully."
+        else:
+            return f"Failed to update panoramic value: {resp.status_code} - {resp.text}"
     
     # @app.callback(
     #     Output("scatter-plot", "figure"), 
