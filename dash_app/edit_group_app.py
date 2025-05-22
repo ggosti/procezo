@@ -45,6 +45,7 @@ layout1 = html.Div(
             html.P(children= "Selected preprocessed records post-gate:"),
             html.P(id="preprocessed-gated-selected-record-names", children= "< None >"),
             html.Button('Save selected records', id='save-gate', n_clicks=0),
+            html.P(id="button-basic-responce", children= "not saved"),
             dcc.Store(id='group-variables'),
         ])
 
@@ -71,5 +72,5 @@ register_callbacks_vars(dash_app)
 register_callbacks_group(dash_app)
 
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8050)
+    dash_app.run_server(debug=True, port=8050)
 

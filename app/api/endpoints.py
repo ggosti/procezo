@@ -60,10 +60,11 @@ def update_group_panoramic(
 
 @router.get("/api/records/{step}/{project_name}/{group_name}")
 def list_records(step: str, project_name: str, group_name: str, ver: Optional[str] = Query(default=None)):
+    print('list_records',step,project_name,group_name,ver)
     records = data_container.get_recods_in_project_and_group(project_name, group_name, step,  ver)
     print('records',records)
-    if len(records) == 0:
-        return JSONResponse(content={"error": f"Not found records in {project_name}/{group_name} at step {step} ver {ver}"}, status_code=404)
+    #if len(records) == 0:
+    #    return JSONResponse(content={"error": f"Not found records in {project_name}/{group_name} at step {step} ver {ver}"}, status_code=404)
     return [{"name":r.name,"step":r.step,"ver":r.version,"time_key":r.timeKey} for r in records]
 
 @router.get("/api/record/{step}/{project_name}/{group_name}/{record_name}")
@@ -73,12 +74,12 @@ def get_record_data(step: str, project_name: str, group_name: str, record_name: 
         return JSONResponse(content={"error": f"Not found record {record_name} version {ver}: in {project_name}/{group_name}  at step {step}"}, status_code=404)
     return JSONResponse(content={"rows": record.to_dict(),"timeKey": record.timeKey,"pars":record.pars}, status_code=200)
 
-@router.post("/api/record/proc/{project_name}/{group_name}/{record_name}/preprocessed-VR-sessions")
+@router.post("/api/record/proc/{project_name}/{group_name}/{record_name}/{verion_name}")
 def store_record_data(
     project_name: str, 
     group_name: str, 
     record_name: str, 
-    #verion_name: str, 
+    verion_name: str, 
     rows: List[Dict[str, Any]]
     ):
 
@@ -86,17 +87,22 @@ def store_record_data(
     print('rows',rows)
     kDf = pd.DataFrame(rows)
 
-    verion_name = 'preprocessed-VR-sessions' 
+    
+    if verion_name == 'preprocessed-VR-sessions': 
+        parentRecord =  data_container.get_record(project_name,group_name,record_name,'raw')
+        fName = record_name+'-preprocessed'
+        if parentRecord is None:
+            return JSONResponse(content={"error": f"Not found record {record_name} version {verion_name}: in {project_name}/{group_name}  at step proc"}, status_code=404)
+    if verion_name == 'preprocessed-VR-sessions-gated':
+        parentRecord =  data_container.get_record(project_name,group_name,record_name,'proc','preprocessed-VR-sessions')
+        fName = record_name      
 
-    rawRecord =  data_container.get_record(project_name,group_name,record_name,'raw')
     procGroup = data_container.get_group(project_name,group_name,'proc',version=verion_name)
     #print('record',record)
-    if rawRecord is None:
-        return JSONResponse(content={"error": f"Not found record {record_name} version {verion_name}: in {project_name}/{group_name}  at step proc"}, status_code=404)
     #print('record',record)
-    fName = record_name+'-preprocessed'
-    record_path = os.path.join(procGroup.path, 'preprocessed-VR-sessions',fName+'.csv')
-    data_container.add_record(procGroup,fName,record_path, kDf, saveFile=True, version=verion_name, parent_record = rawRecord)
+
+    record_path = os.path.join(procGroup.path, verion_name,fName+'.csv')
+    data_container.add_record(procGroup,fName,record_path, kDf, saveFile=True, version=verion_name, parent_record = parentRecord)
 
     return JSONResponse(content={"status": "ok"}, status_code=200)
 
@@ -124,12 +130,12 @@ def update_record_data(
 
 @router.delete("/api/record/proc/{project_name}/{group_name}/{record_name}/{verion_name}")
 def delete_record(project_name: str, group_name: str, record_name: str, verion_name: str):
-    #print('delete_record',project_name,group_name,record_name,verion_name)
+    print('delete_record',project_name,group_name,record_name,verion_name)
     procRecord =  data_container.get_record(project_name,group_name,record_name,'proc',version=verion_name)
     if procRecord is None:
         return JSONResponse(content={"error": f"Not found record {record_name} version {verion_name}: in {project_name}/{group_name}  at step proc"}, status_code=404)
-    os.remove(procRecord.path)
     data_container.remove_record(procRecord)
+    #os.remove(procRecord.path)
     return JSONResponse(content={"status": "ok"}, status_code=200)
 
 

@@ -157,8 +157,10 @@ def register_callbacks_vars(app):
 #--------------------------------------
 
 
-def get_record(step,project_name,group_name,record_name):    
+def get_record(step,project_name,group_name,record_name,version=None):    
     url = f"{FASTAPI_URL}/record/{step}/{project_name}/{group_name}/{record_name}"
+    if version is not None:
+        url += f"?ver={version}"
     # Make the GET request
     response = requests.get(url)
 
@@ -170,8 +172,8 @@ def get_record(step,project_name,group_name,record_name):
 
     return data
 
-def get_record_df(step,project_name,group_name,record_name):
-    data = get_record(step,project_name,group_name,record_name)
+def get_record_df(step,project_name,group_name,record_name,version=None):
+    data = get_record(step,project_name,group_name,record_name,version)
     df = pd.DataFrame(data["rows"])
     timekey = data["timeKey"]
     pars = data["pars"]
@@ -851,195 +853,218 @@ def register_callbacks_group(app):
         else:
             return f"Failed to update panoramic value: {resp.status_code} - {resp.text}"
     
-    # @app.callback(
-    #     Output("scatter-plot", "figure"), 
-    #     Output("x-slider-output", "children"), 
-    #     Output("x-slider-2", "min"),
-    #     Output("x-slider-2", "max"), 
-    #     Output("x-slider-2", "marks"), 
-    #     Output("y-slider-output", "children"), 
-    #     Output("y-slider", "min"),
-    #     Output("y-slider", "max"), 
-    #     Output("y-slider", "marks"),
-    #     Input("variables", "data"),
-    #     Input("panoramic-checklist","value"),
-    #     Input("x-slider-2", "value"),
-    #     Input("y-slider", "value"),
-    # )
-    # def update_graph(data,value,x_filter = [0., 360.], y_filter = [0., 2.]):
-    #     data = json.loads(data) 
-    #     project_name = data["project_name"]
-    #     group_name = data["group_name"]
-    #     #print('x_filter',x_filter)
-    #     print('update_graph',group_name)
-    #     panoramic = False
-    #     if "Panoramic" in value:
-    #         panoramic = True
-    #     if isinstance(group_name, str):#project_name in allowedProjects: 
-    #         procGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-    #         dfSs = [re.data for re in procGroup.records]
-    #         fileNames = [re.name for re in procGroup.records]
-    #         #fileNames, dfSs = loadData(group_name,project_name,version='preprocessed-VR-sessions')
-    #         #dff = df[df.country == value]
-    #         paths = getPaths(dfSs,panoramic=panoramic)
-    #         totTimes,totVars = getDurationAndVariability(paths)
-    #         dfScalar = pd.DataFrame({'variance':totVars,'session time (s)':totTimes,'fileNames':fileNames} )
-    #         x = dfScalar['session time (s)']
-    #         y = dfScalar['variance']
-    #         names = dfScalar['fileNames']
-    #         fig = myScatter(x,y,xlab = 'session time (s)' ,ylab = 'variance',names = names)  #px.scatter(dfScalar,x='session time (s)', y='variance', marginal_x="histogram", marginal_y="histogram",hover_data=['fileNames'])
-    #         fig.add_shape(type="rect",
-    #             x0=x_filter[0], y0=y_filter[0], x1=x_filter[1], y1=y_filter[1],
-    #             line=dict(
-    #                 color="RoyalBlue",
-    #                 width=2,
-    #             ),
-    #             fillcolor="LightSkyBlue",
-    #             layer="below",
-    #         )
+    @app.callback(
+        Output("scatter-plot", "figure"), 
+        Output("x-slider-output", "children"), 
+        Output("x-slider-2", "min"),
+        Output("x-slider-2", "max"), 
+        Output("x-slider-2", "marks"), 
+        Output("y-slider-output", "children"), 
+        Output("y-slider", "min"),
+        Output("y-slider", "max"), 
+        Output("y-slider", "marks"),
+        Input("variables", "data"),
+        State("panoramic-checklist","value"),
+        Input("x-slider-2", "value"),
+        Input("y-slider", "value"),
+    )
+    def update_graph(data,value,x_filter = [0., 360.], y_filter = [0., 2.]):
+        data = json.loads(data) 
+        project_name = data["project_name"]
+        group_name = data["group_name"]
+        #print('x_filter',x_filter)
+        print('update_graph',group_name)
+        panoramic = False
+        if "Panoramic" in value:
+            panoramic = True
+        if isinstance(group_name, str):#project_name in allowedProjects: 
+            #procGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
+            records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
+            #dfSs = [re.data for re in procGroup.records]
+            fileNames = [re["name"] for re in records]
+            step = 'proc'
+            dfSs = []
+            for re in records:
+                print('record',re['name'],re['ver'])
+                #dfS = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{re['name']}?ver={re['ver']}").json()
+                record_name = re['name']
+                dfS, timekey, pars  = get_record_df(step,project_name,group_name,record_name,version="preprocessed-VR-sessions")
+                dfSs.append(dfS)
+            #fileNames, dfSs = loadData(group_name,project_name,version='preprocessed-VR-sessions')
+            #dff = df[df.country == value]
+            paths = getPaths(dfSs,panoramic=panoramic)
+            totTimes,totVars = getDurationAndVariability(paths)
+            dfScalar = pd.DataFrame({'variance':totVars,'session time (s)':totTimes,'fileNames':fileNames} )
+            x = dfScalar['session time (s)']
+            y = dfScalar['variance']
+            names = dfScalar['fileNames']
+            fig = myScatter(x,y,xlab = 'session time (s)' ,ylab = 'variance',names = names)  #px.scatter(dfScalar,x='session time (s)', y='variance', marginal_x="histogram", marginal_y="histogram",hover_data=['fileNames'])
+            fig.add_shape(type="rect",
+                x0=x_filter[0], y0=y_filter[0], x1=x_filter[1], y1=y_filter[1],
+                line=dict(
+                    color="RoyalBlue",
+                    width=2,
+                ),
+                fillcolor="LightSkyBlue",
+                layer="below",
+            )
             
-    #         xmin = np.floor(x.min()) 
-    #         xmax = np.ceil(x.max())
-    #         ymin = np.floor(y.min()) 
-    #         ymax = np.ceil(y.max())
+            xmin = np.floor(x.min()) 
+            xmax = np.ceil(x.max())
+            ymin = np.floor(y.min()) 
+            ymax = np.ceil(y.max())
 
-    #         return fig, str(x_filter), xmin, xmax, {xmin: str(xmin), xmax: str(xmax)}, str(y_filter), ymin, ymax, {ymin: str(ymin), ymax: str(ymax)}
-    #     else:
-    #         fig = myScatterEmpty(xlab = 'session time (s)' ,ylab = 'variance')
-    #         return fig, str(x_filter), 0.0, 360.0, {0: '0', 360.: '360'}, str(y_filter), 0.0, 2.0, {0: '0.0', 2.: '2.0'}
+            return fig, str(x_filter), xmin, xmax, {xmin: str(xmin), xmax: str(xmax)}, str(y_filter), ymin, ymax, {ymin: str(ymin), ymax: str(ymax)}
+        else:
+            fig = myScatterEmpty(xlab = 'session time (s)' ,ylab = 'variance')
+            return fig, str(x_filter), 0.0, 360.0, {0: '0', 360.: '360'}, str(y_filter), 0.0, 2.0, {0: '0.0', 2.: '2.0'}
 
-    # @app.callback(
-    #     Output("preprocessed-gated-record-names", "children"),
-    #     Input("variables", "data"),
-    # )
-    # def get_saved_preprocessed_gated_record_names(data):
-    #     data = json.loads(data) 
-    #     project_name = data["project_name"]
-    #     group_name = data["group_name"]
-    #     print(group_name)
-    #     if isinstance(group_name, str):#project_name in allowedProjects: 
-    #         #fileNames, dfSs  = loadData(group_name,project_name,version='preprocessed-VR-sessions')
-    #         records = projObj.get_recods_in_project_and_group(project_name,group_name,step='proc',version='preprocessed-VR-sessions-gated')
-    #         fileNames = [re.name for re in records]
+    @app.callback(
+        Output("preprocessed-gated-record-names", "children"),
+        Input("variables", "data"),
+    )
+    def get_saved_preprocessed_gated_record_names(data):
+        data = json.loads(data) 
+        project_name = data["project_name"]
+        group_name = data["group_name"]
+        print(group_name)
+        if isinstance(group_name, str):#project_name in allowedProjects: 
+            #fileNames, dfSs  = loadData(group_name,project_name,version='preprocessed-VR-sessions')
+            #records = projObj.get_recods_in_project_and_group(project_name,group_name,step='proc',version='preprocessed-VR-sessions-gated')
+            records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions-gated").json()
+            fileNames = [re['name'] for re in records]
             
-    #         return str(fileNames)
-    #     else:
-    #         return str(None)
+            return str(fileNames)
+        else:
+            return str(None)
         
-    # @app.callback(
-    #     Output("preprocessed-gated-selected-record-names", "children"),
-    #     State("variables", "data"),
-    #     Input("x-slider-output", "children"),
-    #     Input("y-slider-output", "children"),
-    # )
-    # def get_selected_preprocessed_gated_record_names(data,xRange,yRange):
-    #     data = json.loads(data) 
-    #     project_name = data["project_name"]
-    #     group_name = data["group_name"]
-    #     print(group_name)
-    #     thTime0,thTime1 = json.loads(xRange)
-    #     thVar0,thVar1 = json.loads(yRange)
-    #     print('xRange',json.loads(xRange),thTime0,thTime1)
-    #     print('yRange',yRange)
-    #     if isinstance(group_name, str):#project_name in allowedProjects: 
-    #         #fileNames, dfSs  = loadData(group_name,project_name,version='preprocessed-VR-sessions')
-    #         records = projObj.get_recods_in_project_and_group(project_name,group_name,step='proc',version='preprocessed-VR-sessions')
-    #         fileNames = [re.name for re in records]
-    #         print('file names',fileNames)
-    #         dfSs = [re.data for re in records]
-    #         paths = getPaths(dfSs)
-    #         totTimes,totVars = getDurationAndVariability(paths)
-    #         ungatedFileNames = []
+    @app.callback(
+        Output("preprocessed-gated-selected-record-names", "children"),
+        State("variables", "data"),
+        State("panoramic-checklist","value"),
+        Input("x-slider-output", "children"),
+        Input("y-slider-output", "children"),
+    )
+    def get_selected_preprocessed_gated_record_names(data,value,xRange,yRange):
+        data = json.loads(data) 
+        project_name = data["project_name"]
+        group_name = data["group_name"]
+        print(group_name)
+        thTime0,thTime1 = json.loads(xRange)
+        thVar0,thVar1 = json.loads(yRange)
+        print('xRange',json.loads(xRange),thTime0,thTime1)
+        print('yRange',yRange)
+        panoramic = False
+        if "Panoramic" in value:
+            panoramic = True
+        if isinstance(group_name, str):#project_name in allowedProjects: 
+            #records = projObj.get_recods_in_project_and_group(project_name,group_name,step='proc',version='preprocessed-VR-sessions')
+            records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
+            fileNames = [re["name"] for re in records]
+            print('file names',fileNames)
+            step = 'proc'
+            dfSs = []
+            for re in records:
+                print('record',re['name'],re['ver'])
+                #dfS = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{re['name']}?ver={re['ver']}").json()
+                record_name = re['name']
+                dfS, timekey, pars  = get_record_df(step,project_name,group_name,record_name,version="preprocessed-VR-sessions")
+                dfSs.append(dfS)
+            
+            paths = getPaths(dfSs,panoramic=panoramic)
+            totTimes,totVars = getDurationAndVariability(paths)
+            ungatedFileNames = []
 
-    #         for fName,totVar,totTime in zip(fileNames, totVars, totTimes):
-    #             #print('fName',fName)
-    #             if (totVar >= thVar0) and (totVar <= thVar1) and (totTime >= thTime0) and (totTime <= thTime1):
-    #                 ungatedFileNames.append(fName)
-    #                 print('session in ',fName)
-    #                 #assert session in d['preprocessedVRsessions'], "session not in preprocessedVRsessions "+session
-    #                 #d['preprocessedVRsessions-gated'][session] = d['preprocessedVRsessions'][session]
-    #                 #if 'ID' in dfS.columns: dfS = dfS.drop(columns=['ID', 'filename'])
-    #                 #dfS.to_csv(gatedPath+'/'+session+'-preprocessed.csv',index=False,na_rep='NA')
-    #             else:
-    #                 print('session out',fName)
-    #                 #tsi.drawPath(path, dpath=None, BBox=None)
-    #         return json.dumps(ungatedFileNames)
-    #     else:
-    #         return json.dumps([])
+            for fName,totVar,totTime in zip(fileNames, totVars, totTimes):
+                #print('fName',fName)
+                if (totVar >= thVar0) and (totVar <= thVar1) and (totTime >= thTime0) and (totTime <= thTime1):
+                    ungatedFileNames.append(fName)
+                    print('session in ',fName)
+                    #assert session in d['preprocessedVRsessions'], "session not in preprocessedVRsessions "+session
+                    #d['preprocessedVRsessions-gated'][session] = d['preprocessedVRsessions'][session]
+                    #if 'ID' in dfS.columns: dfS = dfS.drop(columns=['ID', 'filename'])
+                    #dfS.to_csv(gatedPath+'/'+session+'-preprocessed.csv',index=False,na_rep='NA')
+                else:
+                    print('session out',fName)
+                    #tsi.drawPath(path, dpath=None, BBox=None)
+            return json.dumps(ungatedFileNames)
+        else:
+            return json.dumps([])
         
-    # @app.callback(
-    #     #Output('container-button-basic', 'children'),
-    #     State('variables', 'data'),
-    #     State("preprocessed-gated-selected-record-names", "children"),
-    #     State("x-slider-output", "children"),
-    #     State("y-slider-output", "children"),
-    #     Input('save-gate', 'n_clicks'),
-    #     prevent_initial_call=True
-    # )
-    # def save_selected_records(data, selected_rec_names,xRange,yRange, n_clicks):
-    #     #print('n_clicks',n_clicks )
-    #     #print('data',data )
-    #     #print('selected_rec_names',selected_rec_names )
-    #     selectedNames = json.loads(selected_rec_names)
-    #     #print('selected_rec_names',selectedNames )
-    #     thTime0,thTime1 = json.loads(xRange)
-    #     thVar0,thVar1 = json.loads(yRange)
+    @app.callback(
+        Output('button-basic-responce', 'children'),
+        State('variables', 'data'),
+        State("preprocessed-gated-selected-record-names", "children"),
+        State("x-slider-output", "children"),
+        State("y-slider-output", "children"),
+        Input('save-gate', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def save_selected_records(data, selected_rec_names,xRange,yRange, n_clicks):
+        #print('n_clicks',n_clicks )
+        #print('data',data )
+        #print('selected_rec_names',selected_rec_names )
+        selectedNames = json.loads(selected_rec_names)
+        #print('selected_rec_names',selectedNames )
+        thTime0,thTime1 = json.loads(xRange)
+        thVar0,thVar1 = json.loads(yRange)
 
-    #     if n_clicks>0:
-    #         print("Save ",data)
-    #         dff = json.loads(data) #= pd.read_json(data)
-    #         project_name = dff['project_name']
-    #         group_name = dff['group_name']
-    #         pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-    #         gatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions-gated')
-    #         gatedPath = pregatedGroup.path + '/preprocessed-VR-sessions-gated'
-    #         print('gatedGroup.records',gatedGroup.records)
-    #         for record in gatedGroup.records:
-    #             os.remove(record.path)
-    #             record_name = record.name
-    #             print('record_name to remove',record_name)
-    #             #projObj.remove_record(record)#,project_name,group_name,version='preprocessed-VR-sessions-gated')
-    #             requests.delete(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}/{record_name}/{version}")
+        if n_clicks>0:
+            print("Save ",data)
+            dff = json.loads(data) #= pd.read_json(data)
+            project_name = dff['project_name']
+            group_name = dff['group_name']
+            #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
+            #gatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions-gated')
+            gatedGroupRecords = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions-gated").json()
+            #gatedPath = pregatedGroup.path + '/preprocessed-VR-sessions-gated'
+            print('gatedGroupRecords',gatedGroupRecords)
+            try:
+                for record in gatedGroupRecords:
+                        #os.remove(record.path)
+                        record_name = record["name"]
+                        print('record_name to remove',record_name)
+                        version = "preprocessed-VR-sessions-gated"
+                        #projObj.remove_record(record)#,project_name,group_name,version='preprocessed-VR-sessions-gated')
+                        requests.delete(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{version}")
+            except Exception as e:
+                print(f"Error removing records: {str(e)}")
 
+            d = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
+            #print('ungatedGroup pars',ungatedGroup.path,ungatedGroup.pars_path) 
+            #print('ungatedGroup pars',ungatedGroup.pars) 
+            #print(d['preprocessedVRsessions'])
+            d['gated'] = {'thVar >=':thVar0,'thVar <=':thVar1,'thTime >=':thTime0,'thTime <=':thTime1}
+            #d['preprocessedVRsessions-gated'] = {}
+            #print('d',d)
 
-    #         d = {}
-    #         if pregatedGroup.parsFileExists():
-    #             d = pregatedGroup.loadPars()
-    #         #print('ungatedGroup pars',ungatedGroup.path,ungatedGroup.pars_path) 
-    #         #print('ungatedGroup pars',ungatedGroup.pars) 
-    #         #print(d['preprocessedVRsessions'])
-    #         d['gated'] = {'thVar >=':thVar0,'thVar <=':thVar1,'thTime >=':thTime0,'thTime <=':thTime1}
-    #         d['preprocessedVRsessions-gated'] = {}
-    #         #print('d',d)
+            try:
+                for fName in selectedNames:
+                    print('fName',fName)
+                    #record =projObj.get_record(project_name,group_name,fName,'proc',version='preprocessed-VR-sessions')
+                    version='preprocessed-VR-sessions'
+                    record_name = fName
+                    #record = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}?ver={version}")
+                    dfS, timeKey, pars = get_record_df('proc',project_name,group_name,record_name,version=version)
+                    childRecords = requests.get(f"{FASTAPI_URL}/record/children/proc/{project_name}/{group_name}/{record_name}?ver={version}").json()
 
-    #         for fName in selectedNames:
-    #             print('fName',fName)
-    #             #record =projObj.get_record(project_name,group_name,fName,'proc',version='preprocessed-VR-sessions')
-    #             version='preprocessed-VR-sessions'
-    #             records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver={version}")
-    #             record = [r for r in records.json() if r["name"] == file][0]
-
-    #             #pathSes = record.group.path
-    #             record_path = os.path.join(gatedPath,fName+'.csv')
-    #             print('record',record.name)#,pathSes)
-
-    #             # i = len(utils.records) + 1
-    #             # ungatedRecord = Record(i, fName, record_path, 'proc', record.data) 
-    #             # ungatedRecord.set_ver('preprocessed-VR-sessions-gated')
-    #             # ungatedRecord.group = ungatedGroup
-    #             # ungatedRecord.project = ungatedGroup.project
-    #             # ungatedGroup.add_record(ungatedRecord)
-    #             # ungatedRecord.parent_record = record
-    #             # record.add_child_record(ungatedRecord)
-    #             # utils.records.append(ungatedRecord)
-    #             #ungatedRecord = projObj.add_record(record,gatedGroup,fName,record_path, record.data, version='preprocessed-VR-sessions-gated')
-    #             ungatedRecords = requests.put(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}/{record_name}/{version}")
-    #             ungatedRecord = [r for r in records.json() if r["name"] == file][0]
-    #             d['preprocessedVRsessions-gated'][fName] = d['preprocessedVRsessions'][fName]
-
-    #             ungatedRecord.data.to_csv(record_path,index=False,na_rep='NA')
-
-    #         tsi.writeJson(pregatedGroup.pars_path,d)
+                    if len(childRecords) == 0:
+                        #fName = record_name+'-preprocessed'
+                        #record_path = os.path.join(procGroup.path, 'preprocessed-VR-sessions',fName+'.csv')
+                        #procRecord = projObj.add_record(rawRecord,procGroup,fName,record_path, kDf, version='preprocessed-VR-sessions')
+                        record_ver='preprocessed-VR-sessions-gated'
+                        requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{record_ver}", json=dfS.to_dict(orient="records"))
+                        print(f"Posted record in {project_name}/{group_name}/{record_name} at step proc version {version}") 
+                resp = requests.patch(
+                    f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions",
+                    data=json.dumps(d),
+                    headers={"Content-Type": "application/json"}
+                )
+                print('patch resp',resp)
+            except Exception as e:
+                return f"Error: {str(e)}"
+            #tsi.writeJson(pregatedGroup.pars_path,d)
+            return "Saved!"
 
 
     pass

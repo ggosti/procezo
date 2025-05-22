@@ -52,7 +52,6 @@ def remove_record(n_clicks,data):
 
 dash_app = dash.Dash(__name__, requests_pathname_prefix='/edit_record/') #,  external_stylesheets=[dbc.themes.BOOTSTRAP]  )
 
-print('start layout')
 
 layout1 = html.Div(
         [
@@ -103,7 +102,6 @@ dash_app.layout =  html.Div([
         dcc.Store(id='variables'),
 ])
 
-print('start callbacks')
 
 register_callbacks_vars(dash_app)
 register_callbacks_records(dash_app) #init_callbacks(dash_app)

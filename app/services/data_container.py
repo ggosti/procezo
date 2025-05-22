@@ -42,6 +42,8 @@ class Record:
                 self.timeKey = None
 
         self.child_records = []
+        #self.verDict = {'preprocessed-VR-sessions':'preprocessedVRsessions','preprocessed-VR-sessions-gated':'preprocessedVRsessions-gated'}
+        
 
     def to_dict(self):
         return self.data.to_dict(orient="records")
@@ -53,26 +55,33 @@ class Record:
         self.child_records.append(record)
 
     def isProcRecordInProcFile(self):
+        strVer = self.version
         pars = self.group.loadPars()
-        return (self.name in pars['preprocessedVRsessions'].keys())
+        return (self.name in pars[strVer].keys())
     
     def loadProcRecordFromProcFile(self):
+        strVer = self.version
         pars = self.group.loadPars()
         #print('timeKey',self.timeKey)
         dfS = self.data[self.timeKey]
-        tInt = pars['preprocessedVRsessions'][self.name]['t0'],pars['preprocessedVRsessions'][self.name]['t1']
+        tInt = pars[strVer][self.name]['t0'],pars[strVer][self.name]['t1']
         tInt1 = dfS.min(),dfS.max()
         assert tInt==tInt1, ('mismatch error between csv and pars',self.name,'tInt',tInt,'tInt1',tInt1)
-        self.pars = pars['preprocessedVRsessions'][self.name]
+        self.pars = pars[strVer][self.name]
 
     def putProcRecordInProcFile(self):
+        strVer = self.version
         pars = self.group.loadPars()
+        print('putProcRecordInProcFile pars',self.name, pars)
         print('timeKey',self.timeKey)
         dfS = self.data[self.timeKey]
         tInt = float(dfS.min()),float(dfS.max())
-        pars['preprocessedVRsessions'][self.name] = {'t0':tInt[0],'t1':tInt[1]}
-        self.pars = pars['preprocessedVRsessions'][self.name]
+        if strVer not in pars.keys():
+            pars[strVer] = {}
+        pars[strVer][self.name] = {'t0':tInt[0],'t1':tInt[1]}
+        self.pars = pars[strVer][self.name]
         self.group.updateParFile()
+        print('end putProcRecordInProcFile pars',self.name, pars)   
 
 class Group:
     """
@@ -148,7 +157,7 @@ class Group:
                 'raw records folder': os.path.normpath(self.parent_group.path),
                 'raw records': [r.name for r in self.parent_group.records],
                 'bbox':{},
-                'preprocessedVRsessions':{} }
+                'preprocessed-VR-sessions':{} }
         with open(file, 'w', encoding='utf-8') as f:
             json.dump(pars, f, ensure_ascii=False, indent=4) 
         self.pars = pars
@@ -369,14 +378,16 @@ class DataContainer:
         self.records.append(newRecord)
     
     def remove_record(self,record):
-        verDict = {'preprocessed-VR-sessions':'preprocessedVRsessions','preprocessed-VR-sessions-gated':'preprocessedVRsessions-gated'}
+        #verDict = {'preprocessed-VR-sessions':'preprocessedVRsessions','preprocessed-VR-sessions-gated':'preprocessedVRsessions-gated'}
         if record is not None:
             procGroup = record.group
-            strVer = verDict[record.version]
+            strVer = record.version
             print('remove name',record.name)
             if isinstance(procGroup.pars, dict):
                 print('keys',procGroup.pars[strVer].keys()) #print('keys',procGroup.pars['preprocessedVRsessions'].keys())
-                del procGroup.pars[strVer][record.name] #del procGroup.pars['preprocessedVRsessions'][record.name]
+                if record.name in procGroup.pars[strVer].keys():
+                    print('remove',record.name)
+                    del procGroup.pars[strVer][record.name] #del procGroup.pars['preprocessedVRsessions'][record.name]
                 print('keys',procGroup.pars[strVer].keys()) #print('keys',procGroup.pars['preprocessedVRsessions'].keys())
                 procGroup.updateParFile()
             if os.path.isfile(record.path):
