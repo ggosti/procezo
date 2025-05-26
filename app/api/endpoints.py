@@ -37,6 +37,7 @@ def get_group_data(project_name: str, group_name: str, ver: str):
 
 class GroupPatch(BaseModel):
     panoramic: Optional[bool] = None
+    gated: Optional[Dict] = None
     # Add other fields as needed, all optional
 
 @router.patch("/api/group/proc/{project_name}/{group_name}/{ver}")
@@ -48,10 +49,11 @@ def update_group_panoramic(
 ):
     # update only the panoramic field
     step = 'proc'
-    #print('list_groups',step,project_name,ver)
+    print('patch',patch)
     update_data = patch.model_dump(exclude_unset=True)
     print('update_data',update_data)
     group = data_container.patch_group(project_name, group_name, step, ver, update_data)
+    #print('group',group.pars[])
     if group is None:
         return JSONResponse(content={"error": "Group not found"}, status_code=404)
     return {"status": "ok", "updated": update_data}
@@ -84,7 +86,7 @@ def store_record_data(
     ):
 
     # Convert JSON to Pandas DataFrame
-    print('rows',rows)
+    #print('rows',rows)
     kDf = pd.DataFrame(rows)
 
     

@@ -1019,16 +1019,22 @@ def register_callbacks_group(app):
             gatedGroupRecords = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions-gated").json()
             #gatedPath = pregatedGroup.path + '/preprocessed-VR-sessions-gated'
             print('gatedGroupRecords',gatedGroupRecords)
-            try:
-                for record in gatedGroupRecords:
-                        #os.remove(record.path)
-                        record_name = record["name"]
-                        print('record_name to remove',record_name)
-                        version = "preprocessed-VR-sessions-gated"
-                        #projObj.remove_record(record)#,project_name,group_name,version='preprocessed-VR-sessions-gated')
-                        requests.delete(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{version}")
-            except Exception as e:
-                print(f"Error removing records: {str(e)}")
+            
+            for record in gatedGroupRecords:
+                try:
+                    record_name = record["name"]
+                    print('record_name to remove',record_name)
+                    version = "preprocessed-VR-sessions-gated"
+                    resp = requests.delete(
+                        f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{version}",
+                        timeout=5  # Add a timeout to avoid hanging forever
+                    )
+                    if resp.status_code == 200:
+                        print("Record removed successfully.")
+                    else:
+                        print(f"Failed to remove record: {resp.status_code}")
+                except Exception as e:
+                    print(f"Error removing records: {str(e)}")
 
             d = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
             #print('ungatedGroup pars',ungatedGroup.path,ungatedGroup.pars_path) 
@@ -1053,8 +1059,13 @@ def register_callbacks_group(app):
                         #record_path = os.path.join(procGroup.path, 'preprocessed-VR-sessions',fName+'.csv')
                         #procRecord = projObj.add_record(rawRecord,procGroup,fName,record_path, kDf, version='preprocessed-VR-sessions')
                         record_ver='preprocessed-VR-sessions-gated'
-                        requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{record_ver}", json=dfS.to_dict(orient="records"))
+                        resp = requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{record_ver}", json=dfS.to_dict(orient="records"))
                         print(f"Posted record in {project_name}/{group_name}/{record_name} at step proc version {version}") 
+            except Exception as e:
+                print(f"Error: {str(e)}")
+            
+            try:
+                print('patch d',d)
                 resp = requests.patch(
                     f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions",
                     data=json.dumps(d),
@@ -1062,7 +1073,7 @@ def register_callbacks_group(app):
                 )
                 print('patch resp',resp)
             except Exception as e:
-                return f"Error: {str(e)}"
+                print( f"Error: {str(e)}")
             #tsi.writeJson(pregatedGroup.pars_path,d)
             return "Saved!"
 

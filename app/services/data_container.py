@@ -114,6 +114,7 @@ class Group:
         self.pars_path = None # I think this feature can be removed in future versions
         self.pars = None # I think this feature can be removed in future versions
         self.panoramic = False
+        self.gated = None 
         self.startDate = None  
         self.endDate = None 
         self.notes = {} 
@@ -165,6 +166,17 @@ class Group:
 
     def updateParFile(self):
         file = os.path.normpath(os.path.join( self.path,'pars.json') )
+        #with open(file) as f:
+        #    parsOld = json.load(f)
+        ver = 'preprocessed-VR-sessions-gated'
+        for c in self.child_groups:
+            if c.version == ver:
+                a = c.pars[ver] # assuming the first record has the pars
+                b = self.pars[ver]
+                print('old pars[preprocessed-VR-sessions-gated]',a)
+                print('self.pars[preprocessed-VR-sessions-gated]',b)
+                self.pars[ver] = a | b
+        print('self.pars[preprocessed-VR-sessions-gated] 2',self.pars[ver])
         with open(file, 'w', encoding='utf-8') as f:
             json.dump(self.pars, f, ensure_ascii=False, indent=4) 
         return self.pars
@@ -290,10 +302,13 @@ class DataContainer:
         if len(filterGroups) == 1:
             group = filterGroups[0]
             for key, value in update_data.items():
+                print('patch_group_keys',key, value)
                 if hasattr(group, key):
                     setattr(group, key, value)
+                    group.pars[key] = value
                 else:
                     raise ValueError(f"Attribute {key} not found in Group")
+            group.updateParFile()
             return group
         else:
             return None
