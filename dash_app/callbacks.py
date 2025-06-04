@@ -811,6 +811,7 @@ def register_callbacks_group(app):
         
     @app.callback(
         Output("panoramic-checklist","value"),
+        Output("is-panoramic","data"),
         Input("variables", "data"),
     )
     def setPanoramiCheckValuse(data):
@@ -818,14 +819,17 @@ def register_callbacks_group(app):
         dff = json.loads(data) #= pd.read_json(data)
         project_name = dff['project_name']
         group_name = dff['group_name']
-        value=[]
         #rawGroup = projObj.get_group(project_name,group_name,'raw')
         #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
         pregatedGroup = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
         if pregatedGroup["panoramic"]:
             value = ["Panoramic"]
+            data = True
+        else:
+            value = []
+            data = False
         print('pregatedGroup',pregatedGroup,value)
-        return value
+        return value, data #json.dumps({'panoramic': True}) if 'Panoramic' in value else json.dumps({'panoramic': False})
     
     @app.callback(
         Output("panoramic-checklist-dialog","children"),
@@ -852,7 +856,46 @@ def register_callbacks_group(app):
             return "Panoramic value updated successfully."
         else:
             return f"Failed to update panoramic value: {resp.status_code} - {resp.text}"
-    
+    @app.callback(
+        Output("points","data"),
+        State("is-panoramic","data"),
+        Input("variables", "data"),
+    )
+    def update_slider(is_panoramic, data):
+        dff = json.loads(data)
+        project_name = dff['project_name']
+        group_name = dff['group_name']
+        print("is_panoramic",is_panoramic)
+        print("Starting update_slider callback")
+        if isinstance(group_name, str):
+            records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
+            #dfSs = [re.data for re in procGroup.records]
+            #fileNames = [re["name"] for re in records]
+            step = 'proc'
+            dfSs = []
+            fileNames = []
+            for re in records:
+                print('record',re['name'],re['ver'])
+                #dfS = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{re['name']}?ver={re['ver']}").json()
+                record_name = re['name']
+                dfS, timekey, pars  = get_record_df(step,project_name,group_name,record_name,version="preprocessed-VR-sessions")
+                dfSs.append(dfS)
+                fileNames.append(record_name)
+            paths = getPaths(dfSs,panoramic=is_panoramic)
+            totTimes,totVars = getDurationAndVariability(paths)
+            dfScalar = pd.DataFrame({'variance':totVars,'session time (s)':totTimes,'fileNames':fileNames} )
+            x = dfScalar['session time (s)']
+            y = dfScalar['variance']
+            print('x',x)
+            print('y',y)
+            print('fileNames',fileNames)
+        points = {'x': x.tolist(), 
+                  'y': y.tolist(), 
+                  'names': fileNames,
+                  'xmax': float(x.max()), 'xmin': float(x.min()), 
+                  'ymax': float(y.max()), 'ymin': float(y.min())}
+        print('points',points)
+        return points
     @app.callback(
         Output("scatter-plot", "figure"), 
         Output("x-slider-output", "children"), 
@@ -863,16 +906,18 @@ def register_callbacks_group(app):
         Output("y-slider", "min"),
         Output("y-slider", "max"), 
         Output("y-slider", "marks"),
-        Input("variables", "data"),
+        State("variables", "data"),
+        Input("points", "data"),
         State("panoramic-checklist","value"),
         Input("x-slider-2", "value"),
         Input("y-slider", "value"),
     )
-    def update_graph(data,value,x_filter = [0., 360.], y_filter = [0., 2.]):
+    def update_graph(data,points,value,x_filter = [0., 360.], y_filter = [0., 2.]):
         data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         #print('x_filter',x_filter)
+        print('points 2',points)
         print('update_graph',group_name)
         panoramic = False
         if "Panoramic" in value:
@@ -1042,7 +1087,8 @@ def register_callbacks_group(app):
             #print(d['preprocessedVRsessions'])
             d['gated'] = {'thVar >=':thVar0,'thVar <=':thVar1,'thTime >=':thTime0,'thTime <=':thTime1}
             #d['preprocessedVRsessions-gated'] = {}
-            #print('d',d)
+            print('removed records from group')
+            print('d',d)
 
             try:
                 for fName in selectedNames:

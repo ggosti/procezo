@@ -81,10 +81,6 @@ To test api endpoints, use
 ```bash
 http://127.0.0.1:8000/docs
 ```
-In the future, doctest will be implemented for endpoints:
-```bash
-python -m doctest app/api/endpoints.py
-```
 
 ## Running the App
 

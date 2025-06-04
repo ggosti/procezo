@@ -80,7 +80,7 @@ class Record:
             pars[strVer] = {}
         pars[strVer][self.name] = {'t0':tInt[0],'t1':tInt[1]}
         self.pars = pars[strVer][self.name]
-        self.group.updateParFile()
+        self.group.updateParFile(strVer, pars[strVer])
         print('end putProcRecordInProcFile pars',self.name, pars)   
 
 class Group:
@@ -164,19 +164,21 @@ class Group:
         self.pars = pars
         return pars
 
-    def updateParFile(self):
+    def updateParFile(self,key, value):
         file = os.path.normpath(os.path.join( self.path,'pars.json') )
-        #with open(file) as f:
-        #    parsOld = json.load(f)
-        ver = 'preprocessed-VR-sessions-gated'
-        for c in self.child_groups:
-            if c.version == ver:
-                a = c.pars[ver] # assuming the first record has the pars
-                b = self.pars[ver]
-                print('old pars[preprocessed-VR-sessions-gated]',a)
-                print('self.pars[preprocessed-VR-sessions-gated]',b)
-                self.pars[ver] = a | b
-        print('self.pars[preprocessed-VR-sessions-gated] 2',self.pars[ver])
+        with open(file) as f:
+            parsOld = json.load(f)
+        #ver = 'preprocessed-VR-sessions-gated'
+        #for c in self.child_groups:
+        #    if c.version == ver:
+        #        a = c.pars[ver] # assuming the first record has the pars
+        #        b = self.pars[ver]
+        #        print('old pars[preprocessed-VR-sessions-gated]',a)
+        #        print('self.pars[preprocessed-VR-sessions-gated]',b)
+        #        self.pars[ver] = a | b
+        #print('self.pars[preprocessed-VR-sessions-gated] 2',self.pars[ver])
+        self.pars = parsOld
+        self.pars[key] = value
         with open(file, 'w', encoding='utf-8') as f:
             json.dump(self.pars, f, ensure_ascii=False, indent=4) 
         return self.pars
@@ -187,7 +189,6 @@ class Group:
         if self.parsFileExists():
             d = self.loadPars()
         self.pars['panoramic'] = True
-        #self.updateParFile()
 
 
     # def isParsLoaded(self):
@@ -306,9 +307,9 @@ class DataContainer:
                 if hasattr(group, key):
                     setattr(group, key, value)
                     group.pars[key] = value
+                    group.updateParFile(key, value)
                 else:
                     raise ValueError(f"Attribute {key} not found in Group")
-            group.updateParFile()
             return group
         else:
             return None
@@ -404,7 +405,7 @@ class DataContainer:
                     print('remove',record.name)
                     del procGroup.pars[strVer][record.name] #del procGroup.pars['preprocessedVRsessions'][record.name]
                 print('keys',procGroup.pars[strVer].keys()) #print('keys',procGroup.pars['preprocessedVRsessions'].keys())
-                procGroup.updateParFile()
+                procGroup.updateParFile(strVer, procGroup.pars[strVer]) #procGroup.updateParFile('preprocessedVRsessions', procGroup.pars['preprocessedVRsessions'])
             if os.path.isfile(record.path):
                 os.remove(record.path)
             self.records.remove(record)

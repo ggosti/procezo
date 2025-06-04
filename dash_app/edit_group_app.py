@@ -19,7 +19,7 @@ layout1 = html.Div(
                               + "models which were captured with Merkhet. "
                               + "Records in a group are gated according to time duration and variance."),
             html.P(id='group-vars'), #dcc.Store(id='variables')
-            dcc.Checklist(["Panoramic"], [], id="panoramic-checklist", inline=True),
+            dcc.Checklist(options = ["Panoramic"], value = [], id="panoramic-checklist", inline=True),
             html.P(id="panoramic-checklist-dialog" ,children= ""),
             html.P(children= "Preprocessed records pre-gate:"),
             html.P(id="preprocessed-record-names", children= "< None >"),
@@ -46,7 +46,8 @@ layout1 = html.Div(
             html.P(id="preprocessed-gated-selected-record-names", children= "< None >"),
             html.Button('Save selected records', id='save-gate', n_clicks=0),
             html.P(id="button-basic-responce", children= "not saved"),
-            dcc.Store(id='group-variables'),
+            dcc.Store(id='is-panoramic', data=False),
+            dcc.Store(id='points', data={}),
         ])
 
 
