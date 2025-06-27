@@ -145,9 +145,9 @@ def register_callbacks_vars(app):
                 d['record_name'] = record_name
             else:
                 del d['record_name']
-        jsonD = json.dumps(d)
+        #jsonD = json.dumps(d)
         #print(empty_json)
-        return jsonD #pd.DataFrame().to_json()
+        return d #jsonD #pd.DataFrame().to_json()
     
     pass
 
@@ -795,7 +795,7 @@ def register_callbacks_group(app):
         Input("variables", "data"),
     )
     def get_preprocessed_record_names(data):
-        data = json.loads(data) 
+        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         print('get_preprocessed_record_names',group_name)
@@ -816,7 +816,7 @@ def register_callbacks_group(app):
     )
     def setPanoramiCheckValuse(data):
         print("Starting setPanoramiCheckValuse callback",data)
-        dff = json.loads(data) #= pd.read_json(data)
+        dff = data #json.loads(data) #= pd.read_json(data)
         project_name = dff['project_name']
         group_name = dff['group_name']
         #rawGroup = projObj.get_group(project_name,group_name,'raw')
@@ -838,7 +838,7 @@ def register_callbacks_group(app):
         prevent_initial_call=True
     )
     def patchPanoramiCheckValuse(data, value):
-        dff = json.loads(data)
+        dff = data #json.loads(data)
         project_name = dff['project_name']
         group_name = dff['group_name']
         print("check valuse",value)
@@ -856,13 +856,20 @@ def register_callbacks_group(app):
             return "Panoramic value updated successfully."
         else:
             return f"Failed to update panoramic value: {resp.status_code} - {resp.text}"
+
     @app.callback(
         Output("points","data"),
+        Output("x-slider-2", "min"),
+        Output("x-slider-2", "max"), 
+        Output("x-slider-2", "marks"),  
+        Output("y-slider", "min"),
+        Output("y-slider", "max"), 
+        Output("y-slider", "marks"),
         State("is-panoramic","data"),
         Input("variables", "data"),
     )
     def update_slider(is_panoramic, data):
-        dff = json.loads(data)
+        dff = data #json.loads(data)
         project_name = dff['project_name']
         group_name = dff['group_name']
         print("is_panoramic",is_panoramic)
@@ -895,17 +902,35 @@ def register_callbacks_group(app):
                   'xmax': float(x.max()), 'xmin': float(x.min()), 
                   'ymax': float(y.max()), 'ymin': float(y.min())}
         print('points',points)
-        return points
+        xmin = points['xmin']
+        xmax = points['xmax']
+        ymin = points['ymin']
+        ymax = points['ymax']
+        x_filter = [xmin, xmax]
+        y_filter = [ymin, ymax]
+
+        return points, xmin, xmax, {xmin: str(xmin), xmax: str(xmax)}, ymin, ymax, {ymin: str(ymin), ymax: str(ymax)}
+    
+    @app.callback(
+        Output("x-slider-output", "children"), 
+        Output("y-slider-output", "children"),
+        State("variables", "data"),
+        Input("x-slider-2", "value"),
+        Input("y-slider", "value"),
+    )
+    def update_slider_output_text(data,x_filter = [0., 360.], y_filter = [0., 2.]):
+        project_name = data['project_name']
+        group_name = data['group_name']
+        if isinstance(group_name, str):
+            print('x_filter',x_filter)
+            print('y_filter',y_filter)
+            x_text = f"{x_filter[0]} - {x_filter[1]}"
+            y_text = f"{y_filter[0]} - {y_filter[1]}"
+            return x_text, y_text
+        
+
     @app.callback(
         Output("scatter-plot", "figure"), 
-        Output("x-slider-output", "children"), 
-        Output("x-slider-2", "min"),
-        Output("x-slider-2", "max"), 
-        Output("x-slider-2", "marks"), 
-        Output("y-slider-output", "children"), 
-        Output("y-slider", "min"),
-        Output("y-slider", "max"), 
-        Output("y-slider", "marks"),
         State("variables", "data"),
         Input("points", "data"),
         State("panoramic-checklist","value"),
@@ -913,36 +938,21 @@ def register_callbacks_group(app):
         Input("y-slider", "value"),
     )
     def update_graph(data,points,value,x_filter = [0., 360.], y_filter = [0., 2.]):
-        data = json.loads(data) 
+        #print('data 2',data,type(data))
+        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         #print('x_filter',x_filter)
-        print('points 2',points)
-        print('update_graph',group_name)
+        print('points 2',points,type(points))
+        #print('update_graph',group_name)
         panoramic = False
         if "Panoramic" in value:
             panoramic = True
-        if isinstance(group_name, str):#project_name in allowedProjects: 
-            #procGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-            records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
-            #dfSs = [re.data for re in procGroup.records]
-            fileNames = [re["name"] for re in records]
-            step = 'proc'
-            dfSs = []
-            for re in records:
-                print('record',re['name'],re['ver'])
-                #dfS = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{re['name']}?ver={re['ver']}").json()
-                record_name = re['name']
-                dfS, timekey, pars  = get_record_df(step,project_name,group_name,record_name,version="preprocessed-VR-sessions")
-                dfSs.append(dfS)
-            #fileNames, dfSs = loadData(group_name,project_name,version='preprocessed-VR-sessions')
-            #dff = df[df.country == value]
-            paths = getPaths(dfSs,panoramic=panoramic)
-            totTimes,totVars = getDurationAndVariability(paths)
-            dfScalar = pd.DataFrame({'variance':totVars,'session time (s)':totTimes,'fileNames':fileNames} )
-            x = dfScalar['session time (s)']
-            y = dfScalar['variance']
-            names = dfScalar['fileNames']
+        if isinstance(points, dict):
+            x = points['x']
+            y = points['y']
+            names = points['names']
+
             fig = myScatter(x,y,xlab = 'session time (s)' ,ylab = 'variance',names = names)  #px.scatter(dfScalar,x='session time (s)', y='variance', marginal_x="histogram", marginal_y="histogram",hover_data=['fileNames'])
             fig.add_shape(type="rect",
                 x0=x_filter[0], y0=y_filter[0], x1=x_filter[1], y1=y_filter[1],
@@ -953,23 +963,19 @@ def register_callbacks_group(app):
                 fillcolor="LightSkyBlue",
                 layer="below",
             )
-            
-            xmin = np.floor(x.min()) 
-            xmax = np.ceil(x.max())
-            ymin = np.floor(y.min()) 
-            ymax = np.ceil(y.max())
 
-            return fig, str(x_filter), xmin, xmax, {xmin: str(xmin), xmax: str(xmax)}, str(y_filter), ymin, ymax, {ymin: str(ymin), ymax: str(ymax)}
+
+            return fig
         else:
             fig = myScatterEmpty(xlab = 'session time (s)' ,ylab = 'variance')
-            return fig, str(x_filter), 0.0, 360.0, {0: '0', 360.: '360'}, str(y_filter), 0.0, 2.0, {0: '0.0', 2.: '2.0'}
+            return fig #, str(x_filter), 0.0, 360.0, {0: '0', 360.: '360'}, str(y_filter), 0.0, 2.0, {0: '0.0', 2.: '2.0'}
 
     @app.callback(
         Output("preprocessed-gated-record-names", "children"),
         Input("variables", "data"),
     )
     def get_saved_preprocessed_gated_record_names(data):
-        data = json.loads(data) 
+        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         print(group_name)
@@ -986,43 +992,33 @@ def register_callbacks_group(app):
     @app.callback(
         Output("preprocessed-gated-selected-record-names", "children"),
         State("variables", "data"),
+        Input("points", "data"),
         State("panoramic-checklist","value"),
-        Input("x-slider-output", "children"),
-        Input("y-slider-output", "children"),
+        Input("x-slider-2", "value"),
+        Input("y-slider", "value"),
+        
     )
-    def get_selected_preprocessed_gated_record_names(data,value,xRange,yRange):
-        data = json.loads(data) 
+    def get_selected_preprocessed_gated_record_names(data,points,value,xRange2,yRange2):
+        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
-        print(group_name)
-        thTime0,thTime1 = json.loads(xRange)
-        thVar0,thVar1 = json.loads(yRange)
-        print('xRange',json.loads(xRange),thTime0,thTime1)
-        print('yRange',yRange)
+        #print(group_name)
+        thTime0,thTime1 = xRange2 #json.loads(xRange)
+        thVar0,thVar1 = yRange2#json.loads(yRange)
+        print('selected preprocessed-gated record names')
+        print('xRange',xRange2,thTime0,thTime1)
+        print('yRange',yRange2)
         panoramic = False
         if "Panoramic" in value:
             panoramic = True
-        if isinstance(group_name, str):#project_name in allowedProjects: 
-            #records = projObj.get_recods_in_project_and_group(project_name,group_name,step='proc',version='preprocessed-VR-sessions')
-            records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
-            fileNames = [re["name"] for re in records]
-            print('file names',fileNames)
-            step = 'proc'
-            dfSs = []
-            for re in records:
-                print('record',re['name'],re['ver'])
-                #dfS = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{re['name']}?ver={re['ver']}").json()
-                record_name = re['name']
-                dfS, timekey, pars  = get_record_df(step,project_name,group_name,record_name,version="preprocessed-VR-sessions")
-                dfSs.append(dfS)
-            
-            paths = getPaths(dfSs,panoramic=panoramic)
-            totTimes,totVars = getDurationAndVariability(paths)
+        if isinstance(points, dict):
+            xs = points['x']
+            ys = points['y']
+            names = points['names']
             ungatedFileNames = []
-
-            for fName,totVar,totTime in zip(fileNames, totVars, totTimes):
-                #print('fName',fName)
-                if (totVar >= thVar0) and (totVar <= thVar1) and (totTime >= thTime0) and (totTime <= thTime1):
+            for fName,y,x in zip(names, ys, xs):
+                print('fName',fName)
+                if (y >= thVar0) and (y <= thVar1) and (x >= thTime0) and (x <= thTime1):
                     ungatedFileNames.append(fName)
                     print('session in ',fName)
                     #assert session in d['preprocessedVRsessions'], "session not in preprocessedVRsessions "+session
