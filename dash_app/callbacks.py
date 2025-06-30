@@ -859,21 +859,13 @@ def register_callbacks_group(app):
 
     @app.callback(
         Output("points","data"),
-        Output("x-slider-2", "min"),
-        Output("x-slider-2", "max"), 
-        Output("x-slider-2", "marks"),  
-        Output("y-slider", "min"),
-        Output("y-slider", "max"), 
-        Output("y-slider", "marks"),
         State("is-panoramic","data"),
         Input("variables", "data"),
     )
-    def update_slider(is_panoramic, data):
-        dff = data #json.loads(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
-        print("is_panoramic",is_panoramic)
-        print("Starting update_slider callback")
+    def load_points(is_panoramic, data):
+        print("Starting load_points callback")
+        project_name = data['project_name']
+        group_name = data['group_name']
         if isinstance(group_name, str):
             records = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions").json()
             #dfSs = [re.data for re in procGroup.records]
@@ -888,6 +880,12 @@ def register_callbacks_group(app):
                 dfS, timekey, pars  = get_record_df(step,project_name,group_name,record_name,version="preprocessed-VR-sessions")
                 dfSs.append(dfS)
                 fileNames.append(record_name)
+
+            #gatedGroupRecords = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions-gated").json()
+            #gatedFileNames = []
+            #for re in gatedGroupRecords:
+            #    print('gated record',re['name'],re['ver'])
+            #    gatedFileNames.append(re['name'])
             paths = getPaths(dfSs,panoramic=is_panoramic)
             totTimes,totVars = getDurationAndVariability(paths)
             dfScalar = pd.DataFrame({'variance':totVars,'session time (s)':totTimes,'fileNames':fileNames} )
@@ -900,7 +898,28 @@ def register_callbacks_group(app):
                   'y': y.tolist(), 
                   'names': fileNames,
                   'xmax': float(x.max()), 'xmin': float(x.min()), 
-                  'ymax': float(y.max()), 'ymin': float(y.min())}
+                  'ymax': float(y.max()), 'ymin': float(y.min())}#,
+                  #'gatedFileNames':gatedFileNames}
+        print("points",points)
+        return points 
+
+    @app.callback(
+        Output("x-slider-2", "min"),
+        Output("x-slider-2", "max"), 
+        Output("x-slider-2", "marks"),  
+        Output("y-slider", "min"),
+        Output("y-slider", "max"), 
+        Output("y-slider", "marks"),
+        State("is-panoramic","data"),
+        State("variables", "data"),
+        Input("points", "data")
+    )
+    def update_slider(is_panoramic, data,points):
+        dff = data #json.loads(data)
+        project_name = dff['project_name']
+        group_name = dff['group_name']
+        print("is_panoramic",is_panoramic)
+        print("Starting update_slider callback")
         print('points',points)
         xmin = points['xmin']
         xmax = points['xmax']
@@ -909,7 +928,7 @@ def register_callbacks_group(app):
         x_filter = [xmin, xmax]
         y_filter = [ymin, ymax]
 
-        return points, xmin, xmax, {xmin: str(xmin), xmax: str(xmax)}, ymin, ymax, {ymin: str(ymin), ymax: str(ymax)}
+        return xmin, xmax, {xmin: str(xmin), xmax: str(xmax)}, ymin, ymax, {ymin: str(ymin), ymax: str(ymax)}
     
     @app.callback(
         Output("x-slider-output", "children"), 
@@ -919,14 +938,19 @@ def register_callbacks_group(app):
         Input("y-slider", "value"),
     )
     def update_slider_output_text(data,x_filter = [0., 360.], y_filter = [0., 2.]):
-        project_name = data['project_name']
-        group_name = data['group_name']
-        if isinstance(group_name, str):
-            print('x_filter',x_filter)
-            print('y_filter',y_filter)
-            x_text = f"{x_filter[0]} - {x_filter[1]}"
-            y_text = f"{y_filter[0]} - {y_filter[1]}"
-            return x_text, y_text
+        if isinstance(data, dict):
+            #project_name = data['project_name']
+            group_name = data['group_name']
+            if isinstance(group_name, str):
+                print('x_filter',x_filter)
+                print('y_filter',y_filter)
+                x_text = f"[{x_filter[0]}, {x_filter[1]}]"
+                y_text = f"[{y_filter[0]}, {y_filter[1]}]"
+                return x_text, y_text
+        x_text = f"None"
+        y_text = f"None"
+        return x_text, y_text
+        
         
 
     @app.callback(
@@ -1035,13 +1059,14 @@ def register_callbacks_group(app):
     @app.callback(
         Output('button-basic-responce', 'children'),
         State('variables', 'data'),
+        State("points", "data"),
         State("preprocessed-gated-selected-record-names", "children"),
         State("x-slider-output", "children"),
         State("y-slider-output", "children"),
         Input('save-gate', 'n_clicks'),
         prevent_initial_call=True
     )
-    def save_selected_records(data, selected_rec_names,xRange,yRange, n_clicks):
+    def save_selected_records(data, points,selected_rec_names,xRange,yRange, n_clicks):
         #print('n_clicks',n_clicks )
         #print('data',data )
         #print('selected_rec_names',selected_rec_names )
@@ -1052,14 +1077,17 @@ def register_callbacks_group(app):
 
         if n_clicks>0:
             print("Save ",data)
-            dff = json.loads(data) #= pd.read_json(data)
-            project_name = dff['project_name']
-            group_name = dff['group_name']
-            #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-            #gatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions-gated')
+            #dff = json.loads(data) #= pd.read_json(data)
+            project_name = data['project_name']
+            group_name = data['group_name']
+            
             gatedGroupRecords = requests.get(f"{FASTAPI_URL}/records/proc/{project_name}/{group_name}?ver=preprocessed-VR-sessions-gated").json()
-            #gatedPath = pregatedGroup.path + '/preprocessed-VR-sessions-gated'
-            print('gatedGroupRecords',gatedGroupRecords)
+            gatedFileNames = []
+            for re in gatedGroupRecords:
+                print('gated record',re['name'],re['ver'])
+                gatedFileNames.append(re['name'])
+
+            #print('gatedGroupRecords',gatedGroupRecords)
             
             for record in gatedGroupRecords:
                 try:
@@ -1076,6 +1104,8 @@ def register_callbacks_group(app):
                         print(f"Failed to remove record: {resp.status_code}")
                 except Exception as e:
                     print(f"Error removing records: {str(e)}")
+            #points["gatedFileNames"] = []
+            #print('gatedGroupRecords is empty? ',points["gatedFileNames"])
 
             d = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
             #print('ungatedGroup pars',ungatedGroup.path,ungatedGroup.pars_path) 
@@ -1087,14 +1117,16 @@ def register_callbacks_group(app):
             print('d',d)
 
             try:
+                #newGatedRecords = []
                 for fName in selectedNames:
-                    print('fName',fName)
+                    print('fName post',fName)
                     #record =projObj.get_record(project_name,group_name,fName,'proc',version='preprocessed-VR-sessions')
                     version='preprocessed-VR-sessions'
                     record_name = fName
                     #record = requests.get(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}?ver={version}")
                     dfS, timeKey, pars = get_record_df('proc',project_name,group_name,record_name,version=version)
                     childRecords = requests.get(f"{FASTAPI_URL}/record/children/proc/{project_name}/{group_name}/{record_name}?ver={version}").json()
+                    #print('childRecords',childRecords)
 
                     if len(childRecords) == 0:
                         #fName = record_name+'-preprocessed'
@@ -1103,6 +1135,8 @@ def register_callbacks_group(app):
                         record_ver='preprocessed-VR-sessions-gated'
                         resp = requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{record_ver}", json=dfS.to_dict(orient="records"))
                         print(f"Posted record in {project_name}/{group_name}/{record_name} at step proc version {version}") 
+                        #newGatedRecords.appenrd(record_name)
+                #points['gatedFileNames'] = newGatedRecords
             except Exception as e:
                 print(f"Error: {str(e)}")
             
