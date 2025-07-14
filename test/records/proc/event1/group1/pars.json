@@ -8,7 +8,23 @@
         "U4"
     ],
     "bbox": {},
-    "preprocessedVRsessions": {
+    "preprocessed-VR-sessions": {
+        "U2-preprocessed": {
+            "t0": 20.0,
+            "t1": 79.0
+        },
+        "U1-preprocessed": {
+            "t0": 10.0,
+            "t1": 80.0
+        }
+    },
+    "gated": {
+        "thVar >=": 0,
+        "thVar <=": 2,
+        "thTime >=": 0,
+        "thTime <=": 360
+    },
+    "preprocessed-VR-sessions-gated": {
         "U1-preprocessed": {
             "t0": 10.0,
             "t1": 80.0
@@ -18,11 +34,5 @@
             "t1": 79.0
         }
     },
-    "gated": {
-        "thVar >=": 0.3,
-        "thVar <=": 1,
-        "thTime >=": 0,
-        "thTime <=": 360
-    },
-    "preprocessedVRsessions-gated": {}
+    "panoramic": false
 }
