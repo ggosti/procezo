@@ -568,7 +568,8 @@ def register_callbacks_records(app):
         group_name = data['group_name']
         record_name = data['record_name']
         if record_name is not None:
-            dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
+            #dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
+            dfS = pd.DataFrame(record["rows"])
 
             nav = tsi.getVR(dfS)
             navAr = tsi.getAR(dfS)
