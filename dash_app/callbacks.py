@@ -200,42 +200,31 @@ def make_plot(df, t,plotLines,lineName,n,navAr,x_filter):
     #print('navAr',navAr)
     #print('navVr',n)
 
-    #print('min l',plotLines, np.nanmin(plotLines))
-    fig.add_trace(
-        go.Scatter(
-            x=t,
-            y= navAr, #np.nanmin(plotLines)*navAr,
-            mode='lines',
-            name="AR",
-            #fill= "toself", 
-        ),
-        row=n_rows, col=1
-    )
+    # show VR and AR
+    if navAr is None:
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y= navAr, #np.nanmin(plotLines)*navAr,
+                mode='lines',
+                name="AR",
+                #fill= "toself", 
+            ),
+            row=n_rows, col=1
+        )
 
-    # fig.add_trace(
-    #     go.Scatter(
-    #         x=t,
-    #         y=+np.nanmax(plotLines)*navAr,
-    #         mode='none',
-    #         name="AR Raw",
-    #         fill="tonexty",  # fill area between trace0 and trace1
-    #     ),
-    #     row=n_rows, col=1
-    # )
-
-    # swhow VR and AR
-    fig.add_trace(
-        go.Scatter(
-            x=t,
-            y= n,
-            mode='lines',
-            name="VR",
-            #fill= "toself", 
-        ),
-        row=n_rows, col=1
-    )
-    fig.update_yaxes(title_text="mode", row=n_rows, col=1)
-    fig.update_xaxes(title_text="time", row=n_rows, col=1)
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y= n,
+                mode='lines',
+                name="VR",
+                #fill= "toself", 
+            ),
+            row=n_rows, col=1
+        )
+        fig.update_yaxes(title_text="mode", row=n_rows, col=1)
+        fig.update_xaxes(title_text="time", row=n_rows, col=1)
 
     # fig.add_trace(
     #     go.Scatter(
@@ -388,40 +377,90 @@ def register_callbacks_records(app):
     
     @app.callback(
         Output("preprocessed-record-name", "children"),
+        Output("processed-record", "data"),
         Input("variables", "data"), 
     )
     def update_preprocessed_record_name(data):
-        dff = json.loads(data) #= pd.read_json(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
-        record_name = dff['record_name']
+        #dff = json.loads(data) #= pd.read_json(data)
+        print("Starting update_preprocessed_record_name callback")
+        project_name = data['project_name']
+        group_name = data['group_name']
+        record_name = data['record_name']
+        print("record name",record_name)
         if record_name is not None:
             #print("record name",record_name)
             #rawRecord = projObj.get_record(project_name,group_name,record_name,'raw')
             childRecords = requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
             print('childRecords',childRecords)
             if len(childRecords) == 1:    
-                return "Preprocessed record exist: "+ str(childRecords[0]['name']) 
+                return "Preprocessed record exist: "+ str(childRecords[0]['name']), childRecords
             elif len(childRecords) > 1:    
-                return "Preprocessed records exist: "+ str([cr.name for cr in childRecords]) 
-        return "Preprocessed record exist: < None >"  
+                return "Preprocessed records exist: "+ str([cr.name for cr in childRecords]) , childRecords
+        return "Preprocessed record exist: < None >" , []
+
+    @app.callback(
+        Output("record-points","data"),
+        Input("variables", "data"),
+    )
+    def lead_record_points(data):
+        print("Starting lead_record_points callback")
+        #dff = json.loads(data) #= pd.read_json(data)
+        project_name = None
+        group_name = None
+        record_name = None
+        try:
+            #data = app.layout['variables'].data
+            project_name = data['project_name']
+            group_name = data['group_name']
+            record_name = data['record_name']
+        except Exception as e:
+            print('Error in lead_record_points',e)
+        
+        if record_name is not None:
+            step = 'raw'
+            url = f"{FASTAPI_URL}/record/{step}/{project_name}/{group_name}/{record_name}"
+            #if version is not None:
+            #    url += f"?ver={version}"
+            # Make the GET request
+            response = requests.get(url)
+
+            # Raise error if something went wrong
+            response.raise_for_status()
+
+            # Convert JSON response to DataFrame
+            record = response.json()
+            #df = pd.DataFrame(data["rows"])
+            #timekey = data["timeKey"]
+            #pars = data["pars"]
+            return record
+        return {}
 
     @app.callback(
         Output("x-slider-endpoints", "children"),
-        Input("variables", "data"), 
+        State("variables", "data"),
+        Input("record-points", "data"),
+        Input("processed-record", "data"),
+        prevent_initial_call=True
     )
-    def load_edpoints(data):
-        dff = json.loads(data) #dff = pd.read_json(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
-        record_name = dff['record_name']
+    def load_edpoints(data, record, childRecords):
+        #dff = json.loads(data) #dff = pd.read_json(data)
+        project_name = data['project_name']
+        group_name = data['group_name']
+        record_name = data['record_name']
         tmin = None
         tmax = None
         x_filter = [tmin,tmax]
+        print("-> load_edpoints ", record.keys())
 
         if record_name is not None:  
-            dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)  
-            childRecords = requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
+            #dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)  
+            #childRecords = processed_record_list #requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
+            print('childRecords',childRecords)
+            #dfS = childRecords[0]['data'] if len(childRecords) > 0 else None
+            dfS = pd.DataFrame(record["rows"])
+            #timekey = record["timeKey"]
+            #pars = record["pars"]
+            #print('dfS',dfS)
             if len(dfS.index):
                 path = tsi.getPath(dfS,['posx','posy','posz'])
                 t,x,y,z = path.T
@@ -448,10 +487,10 @@ def register_callbacks_records(app):
     ) #(update_slider)
     def update_slider(data, endpointsString):#,x_filter):
         print("update_slider",data)
-        dff = json.loads(data) #= pd.read_json(data)
+        #dff = json.loads(data) #= pd.read_json(data)
         #project_name = dff['project_name']
         #group_name = dff['group_name']
-        record_name = dff['record_name']
+        record_name = data['record_name']
         if record_name is not None:
             print("endpointsString", endpointsString )
             endpoints = json.loads(endpointsString)
@@ -470,23 +509,29 @@ def register_callbacks_records(app):
         Output("record-plot", "figure"),
         #Output("x-slider-endpoints", "children"),
         Input("variables", "data"), 
+        Input("record-points", "data"),
         #Input("project-input1", "value"),
         #Input("dropdown-selection", "value"),
         #Input("dropdown-selection-records", "value"),
         Input("x-slider", "value"),
     )#(load_plot)
-    def load_plot(data,x_filter):
-        dff = json.loads(data) #dff = pd.read_json(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
-        record_name = dff['record_name']
+    def load_plot(data, record, x_filter):
+        #dff = json.loads(data) #dff = pd.read_json(data)
+        project_name = data['project_name']
+        group_name = data['group_name']
+        record_name = data['record_name']
         if record_name is not None:
             #print("record name",record_name)
-            dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
+            #dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
+            dfS = pd.DataFrame(record["rows"])
 
             print('columns',dfS.columns)
-            nav = tsi.getVR(dfS)
-            navAr = tsi.getAR(dfS)
+
+            nav = None
+            navAr = None
+            if 'nav' in dfS.columns:
+                nav = tsi.getVR(dfS)
+                navAr = tsi.getAR(dfS)
             path = tsi.getPath(dfS,['posx','posy','posz'])
             fpath = None
             if 'fx' in dfS.columns: 
@@ -506,8 +551,6 @@ def register_callbacks_records(app):
                     lineName = ['posx','posy','posz','dirx','diry','dirz','fx','fy','fz']
 
 
-                #rawRecord.child_records[0].pars['t0'] == x_filter[0]
-
                 return make_plot(dfS, t,plotLines,lineName,n,nAr,x_filter) 
         return px.scatter()
         
@@ -515,14 +558,15 @@ def register_callbacks_records(app):
     @app.callback(
         Output("3d-record-plot", "figure"),
         Input("variables", "data"), 
+        Input("record-points", "data"),
         Input("x-slider", "value"),
     )#(load_3d_plot)
-    def load_3d_plot(data,x_filter):
+    def load_3d_plot(data, record, x_filter):
         print("Starting load_3d_plot callback")
-        dff = json.loads(data) #dff = pd.read_json(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
-        record_name = dff['record_name']
+        #dff = json.loads(data) #dff = pd.read_json(data)
+        project_name = data['project_name']
+        group_name = data['group_name']
+        record_name = data['record_name']
         if record_name is not None:
             dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
 
@@ -548,10 +592,12 @@ def register_callbacks_records(app):
        Output('container-button-basic', 'children'),
        Input('save-val', 'n_clicks'),
        State('variables', 'data'),
+       State('record-points', 'data'),
+       State("processed-record", "data"),
        State('x-slider-proc-endpoints', 'children'),
        prevent_initial_call=True
     )#(save_records)
-    def save_records(n_clicks,data,endpointsString): #, value):
+    def save_records(n_clicks, data, record, childRecords, endpointsString): #, value):
         print("Starting save_records callback")
         #records = g.records
         print('save_records') 
@@ -560,16 +606,19 @@ def register_callbacks_records(app):
         if n_clicks>0:
             try:
                 print("Save ",data)
-                dff = json.loads(data) #= pd.read_json(data)
-                project_name = dff['project_name']
-                group_name = dff['group_name']
-                record_name = dff['record_name']
-                print('dff',dff)
+                #dff = json.loads(data) #= pd.read_json(data)
+                project_name = data['project_name']
+                group_name = data['group_name']
+                record_name = data['record_name']
+                print('data',data)
                 if record_name is not None:
                     # rawRecord = projObj.get_record(project_name,group_name,record_name,'raw')
                     # procGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
-                    dfS, timeKey, pars = get_record_df('raw',project_name,group_name,record_name)
-                    childRecords = requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
+                    #dfS, timeKey, pars = get_record_df('raw',project_name,group_name,record_name)
+                    dfS = pd.DataFrame(record["rows"])
+                    timeKey = record["timeKey"]
+                    print('timeKey',timeKey)
+                    #childRecords = requests.get(f"{FASTAPI_URL}/record/children/raw/{project_name}/{group_name}/{record_name}").json()
                     kDf = dfS[ (dfS[timeKey]>=x_filter[0]) * (dfS[timeKey]<=x_filter[1])]
                     if len(childRecords) == 0:
                         #fName = record_name+'-preprocessed'
@@ -577,7 +626,7 @@ def register_callbacks_records(app):
                         #procRecord = projObj.add_record(rawRecord,procGroup,fName,record_path, kDf, version='preprocessed-VR-sessions')
                         record_ver='preprocessed-VR-sessions'
                         requests.post(f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}/{record_ver}", json=kDf.to_dict(orient="records"))
-                        return f"Posted record in {project_name}/{group_name}/{record_name} at step proc version {version}" 
+                        return f"Posted record in {project_name}/{group_name}/{record_name} at step proc version {record_ver}" 
                     if len(childRecords) == 1:  
                         procRecord = childRecords[0]
                         print('procRecord',procRecord)
@@ -606,10 +655,10 @@ def register_callbacks_records(app):
         print("Starting remove_record callback")
         if n_clicks:
             try:
-                dff = json.loads(data)
-                project_name = dff['project_name']
-                group_name = dff['group_name']
-                record_name = dff['record_name']
+                #dff = json.loads(data)
+                project_name = data['project_name']
+                group_name = data['group_name']
+                record_name = data['record_name']
                 version = 'preprocessed-VR-sessions'
                 resp = requests.delete(
                     f"{FASTAPI_URL}/record/proc/{project_name}/{group_name}/{record_name}-preprocessed/{version}",
@@ -816,9 +865,8 @@ def register_callbacks_group(app):
     )
     def setPanoramiCheckValuse(data):
         print("Starting setPanoramiCheckValuse callback",data)
-        dff = data #json.loads(data) #= pd.read_json(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
+        project_name = data['project_name']
+        group_name = data['group_name']
         #rawGroup = projObj.get_group(project_name,group_name,'raw')
         #pregatedGroup = projObj.get_group(project_name,group_name,'proc',version='preprocessed-VR-sessions')
         pregatedGroup = requests.get(f"{FASTAPI_URL}/group/proc/{project_name}/{group_name}/preprocessed-VR-sessions").json()
@@ -838,9 +886,9 @@ def register_callbacks_group(app):
         prevent_initial_call=True
     )
     def patchPanoramiCheckValuse(data, value):
-        dff = data #json.loads(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
+        #dff = data #json.loads(data)
+        project_name = data['project_name']
+        group_name = data['group_name']
         print("check valuse",value)
         if 'Panoramic' in value:
             jsonData = json.dumps({'panoramic': True})
@@ -915,9 +963,8 @@ def register_callbacks_group(app):
         Input("points", "data")
     )
     def update_slider(is_panoramic, data,points):
-        dff = data #json.loads(data)
-        project_name = dff['project_name']
-        group_name = dff['group_name']
+        project_name = data['project_name']
+        group_name = data['group_name']
         print("is_panoramic",is_panoramic)
         print("Starting update_slider callback")
         print('points',points)
@@ -933,7 +980,7 @@ def register_callbacks_group(app):
     @app.callback(
         Output("x-slider-output", "children"), 
         Output("y-slider-output", "children"),
-        State("variables", "data"),
+        Input("variables", "data"),
         Input("x-slider-2", "value"),
         Input("y-slider", "value"),
     )
@@ -963,7 +1010,6 @@ def register_callbacks_group(app):
     )
     def update_graph(data,points,value,x_filter = [0., 360.], y_filter = [0., 2.]):
         #print('data 2',data,type(data))
-        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         #print('x_filter',x_filter)
@@ -999,7 +1045,6 @@ def register_callbacks_group(app):
         Input("variables", "data"),
     )
     def get_saved_preprocessed_gated_record_names(data):
-        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         print(group_name)
@@ -1023,7 +1068,6 @@ def register_callbacks_group(app):
         
     )
     def get_selected_preprocessed_gated_record_names(data,points,value,xRange2,yRange2):
-        #data = json.loads(data) 
         project_name = data["project_name"]
         group_name = data["group_name"]
         #print(group_name)
@@ -1077,7 +1121,6 @@ def register_callbacks_group(app):
 
         if n_clicks>0:
             print("Save ",data)
-            #dff = json.loads(data) #= pd.read_json(data)
             project_name = data['project_name']
             group_name = data['group_name']
             

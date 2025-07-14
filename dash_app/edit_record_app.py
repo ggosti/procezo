@@ -56,8 +56,7 @@ dash_app = dash.Dash(__name__, requests_pathname_prefix='/edit_record/') #,  ext
 layout1 = html.Div(
         [
             html.H1(children="Edit Record", style={"textAlign": "center"}),
-            html.P(children="Select Roi in sessions from immersive and not-immersive explorations of Aton 3D " 
-                              + "models which were captured with Merkhet. "),
+            html.P(children="Select record Roi"),
             #dcc.Location(id='url2', refresh=False),
             html.P(id='record-vars'), #dcc.Store(id='variables')
             html.P(id="preprocessed-record-name", children= "Preprocessed record is stored at startup: < None >"),
@@ -81,8 +80,9 @@ layout1 = html.Div(
                 children=''),
             dcc.Graph(id="3d-record-plot"),
             # dcc.Store stores record variable: project_name, group_name, record_name
-            dcc.Store(id='record-variables')
-            
+            dcc.Store(id='record-variables'),
+            dcc.Store(id='record-points', data={}),
+            dcc.Store(id='processed-record', data=[]),
         ])
 
 project_name = '<None>'
