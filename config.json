@@ -1,4 +1,6 @@
 {
+    "FASTAPI_URL_base": "localhost",
+    "FASTAPI_PORT": 8086,
     "rawProjectsPath" : "./test/records/raw/",
     "procProjectsPath" : "./test/records/proc/",
     "allowedProjects" : ["event1","event2"],

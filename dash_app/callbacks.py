@@ -13,7 +13,11 @@ import plotly.graph_objects as go
 
 import timeSeriesInsightToolkit as tsi
 
-FASTAPI_URL = "http://localhost:8000/api"
+with open('config.json') as f:
+    d = json.load(f)
+FASTAPI_URL_base = d['FASTAPI_URL_base']
+FASTAPI_PORT = d['FASTAPI_PORT']
+FASTAPI_URL = f"http://{FASTAPI_URL_base}:{FASTAPI_PORT}/api"
 
 def register_callbacks(dash_app):
     # Populate project dropdown
