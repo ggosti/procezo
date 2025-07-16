@@ -85,6 +85,8 @@
             if (!groupResponse.ok) throw new Error('Error fetching groups');
             const groupData = await groupResponse.json();
             console.log("groupData:", groupData);
+            const groups = groupData.map(item => item.name);
+            console.log("groups:", groups);
             const groupBody = collapseRow.querySelector(`#groups-${collapseId}`);
             groupBody.innerHTML = '';
 
