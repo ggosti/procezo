@@ -56,12 +56,13 @@
         const data = await response.json();
         console.log("record data:", data);
         const records = data.map(item => item.name);
-        console.log("records:", records);
+        console.log("records:", records,records.length);
 
         recordsBody.innerHTML = '';
 
         if (records && records.length > 0) {
           data.records.forEach(recordName => {
+            console.log("recordsName:", recordsName);
             const recordRow = document.createElement('tr');
             recordRow.classList.add('record-row');
             const baseUrl = 'http://192.167.233.88:8087/edit_record';
