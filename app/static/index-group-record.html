@@ -56,11 +56,13 @@
         const data = await response.json();
         console.log("record data:", data);
         const records = data.map(item => item.name);
-        console.log("records:", records,records.length);
+        console.log("records:", records)
+        console.log("records length:",records.length);
 
         recordsBody.innerHTML = '';
 
         if (records && records.length > 0) {
+          console.log("records length in:",records.length);
           records.forEach(recordName => {
             console.log("recordsName:", recordsName);
             const recordRow = document.createElement('tr');
