@@ -67,7 +67,7 @@
             console.log("recordName:", recordName);
             const recordRow = document.createElement('tr');
             recordRow.classList.add('record-row');
-            const baseUrl = 'http://192.167.233.88:8087/edit_record';
+            const baseUrl = 'http://192.167.233.88:8086/edit_record';
             const href = `${baseUrl}/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}/${encodeURIComponent(recordName)}`;
             recordRow.innerHTML = `<td><a href="${href}" target="_blank" rel="noopener noreferrer">${recordName}</a></td>`;
             recordsBody.appendChild(recordRow);
@@ -149,7 +149,7 @@
                 // Group row with collapse button
                 const groupRow = document.createElement('tr');
                 groupRow.classList.add('group-row');
-                const editGroupUrl = `http://192.167.233.88:8087/edit_group/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}`;
+                const editGroupUrl = `http://192.167.233.88:8086/edit_group/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}`;
 
                 groupRow.innerHTML = `
                   <td>
