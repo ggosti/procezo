@@ -33,7 +33,7 @@
   <script>
     async function loadProjects() {
       try {
-        const response = await fetch('/projects');
+        const response = await fetch('/api/projects/raw');
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
