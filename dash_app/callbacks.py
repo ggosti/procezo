@@ -582,13 +582,11 @@ def register_callbacks_records(app):
             #dfS, timekey, pars = get_record_df('raw',project_name,group_name,record_name)
             dfS = pd.DataFrame(record["rows"])
 
-            nav = tsi.getVR(dfS)
-            navAr = tsi.getAR(dfS)
             path = tsi.getPath(dfS,['posx','posy','posz'])
-            fpath = None
             dpath = tsi.getPath(dfS,['dirx','diry','dirz'])
             if len(dfS.index):
-                t,x,y,z,dx,dy,dz,n = tsi.getSesVars(path,dpath,fpath=fpath,nav=nav)
+                t,x,y,z = path.T
+                _, dx,dy,dz = dpath.T  
                 return make_3d_plot(t,x,y,z,dx,dy,dz) 
         return px.scatter()
     
