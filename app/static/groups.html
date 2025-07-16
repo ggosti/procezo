@@ -87,7 +87,7 @@
             console.log("groupData:", groupData);
             const groups = groupData.map(item => item.name);
             console.log("groups:", groups);
-            console.log("groupData.groups:", groupData.groups);
+            //console.log("groupData.groups:", groupData.groups);
             const groupBody = collapseRow.querySelector(`#groups-${collapseId}`);
             groupBody.innerHTML = '';
 
@@ -103,7 +103,7 @@
               noGroupsRow.classList.add('no-groups');
               noGroupsRow.innerHTML = `<td>(No groups)</td>`;
               groupBody.appendChild(noGroupsRow);
-            } else if (group.error) {
+            } else if (groups.error) {
               const errorRow = document.createElement('tr');
               errorRow.innerHTML = `<td class="text-danger">${groupData.error}</td>`;
               groupBody.appendChild(errorRow);

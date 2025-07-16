@@ -51,12 +51,16 @@
       recordsBody.innerHTML = '<tr><td class="no-records ps-4">Loading records...</td></tr>';
 
       try {
-        const response = await fetch(`/records/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}`);
+        const response = await fetch(`/api/records/raw/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}`);
         if (!response.ok) throw new Error('Error fetching records');
         const data = await response.json();
+        console.log("record data:", data);
+        const records = data.map(item => item.name);
+        console.log("records:", records);
+
         recordsBody.innerHTML = '';
 
-        if (data.records && data.records.length > 0) {
+        if (records && records.length > 0) {
           data.records.forEach(recordName => {
             const recordRow = document.createElement('tr');
             recordRow.classList.add('record-row');
@@ -65,7 +69,7 @@
             recordRow.innerHTML = `<td><a href="${href}" target="_blank" rel="noopener noreferrer">${recordName}</a></td>`;
             recordsBody.appendChild(recordRow);
           });
-        } else if (data.records && data.records.length === 0) {
+        } else if (records && records.length === 0) {
           recordsBody.innerHTML = `<tr><td class="no-records ps-4">(No records)</td></tr>`;
         } else if (data.error) {
           recordsBody.innerHTML = `<tr><td class="text-danger ps-4">Error: ${data.error}</td></tr>`;
@@ -80,10 +84,11 @@
       tableBody.innerHTML = '';
 
       try {
-        const response = await fetch('/projects');
+        const response = await fetch('/api/projects/raw');
         if (!response.ok) throw new Error('Error fetching projects');
         const data = await response.json();
-        const projects = data.projects;
+        //const projects = data.projects
+        const projects = data.map(item => item.name);
 
         if (projects.length === 0) {
           tableBody.innerHTML = '<tr><td>No projects found.</td></tr>';
@@ -124,13 +129,18 @@
 
           // Fetch groups for this project
           try {
-            const groupResponse = await fetch(`/groups/${encodeURIComponent(projectName)}`);
+            const groupResponse = await fetch(`/api/groups/raw/${encodeURIComponent(projectName)}`);
             if (!groupResponse.ok) throw new Error('Error fetching groups');
             const groupData = await groupResponse.json();
+            console.log("groupData:", groupData);
+            const groups = groupData.map(item => item.name);
+            console.log("groups:", groups);
+            //console.log("groupData.groups:", groupData.groups);
+
             groupsBody.innerHTML = '';
 
-            if (groupData.groups && groupData.groups.length > 0) {
-              for (const groupName of groupData.groups) {
+            if (groups && groups.length > 0) {
+              for (const groupName of groups) {
                 const groupCollapseId = `collapse-group-${encodeId(projectName)}-${encodeId(groupName)}`;
 
                 // Group row with collapse button
@@ -174,7 +184,7 @@
                   }
                 });
               }
-            } else if (groupData.groups && groupData.groups.length === 0) {
+            } else if (groups && groups.length === 0) {
               groupsBody.innerHTML = `<tr><td class="no-groups ps-4">(No groups)</td></tr>`;
             } else if (groupData.error) {
               groupsBody.innerHTML = `<tr><td class="text-danger ps-4">${groupData.error}</td></tr>`;
