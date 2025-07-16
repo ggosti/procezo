@@ -38,7 +38,10 @@
           throw new Error('Network response was not ok');
         }
         const data = await response.json();
-        const projects = data.projects;
+        //const projects = data.projects;
+        console.log("data:", data);
+        const projects = data.map(item => item.name);
+        console.log("projects names:", projects);
         const listElement = document.getElementById('projects-list');
         listElement.innerHTML = ''; // Clear loading message
 
