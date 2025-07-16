@@ -205,7 +205,7 @@ def make_plot(df, t,plotLines,lineName,n,navAr,x_filter):
     #print('navVr',n)
 
     # show VR and AR
-    if navAr is None:
+    if navAr is not None:
         fig.add_trace(
             go.Scatter(
                 x=t,
@@ -216,7 +216,6 @@ def make_plot(df, t,plotLines,lineName,n,navAr,x_filter):
             ),
             row=n_rows, col=1
         )
-
         fig.add_trace(
             go.Scatter(
                 x=t,
@@ -245,7 +244,7 @@ def make_plot(df, t,plotLines,lineName,n,navAr,x_filter):
     #print('goToRows',goToRows)
     # Add raw data
     for r, l,ln in zip(goToRows, plotLines,lineName):
-        print(ln,l.mean())
+        print(r,ln,l.mean())
         #print(l)
         fig.add_trace(
             go.Scatter(
