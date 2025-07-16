@@ -533,6 +533,8 @@ def register_callbacks_records(app):
 
             nav = None
             navAr = None
+            n = None
+            nAr = None
             if 'nav' in dfS.columns:
                 nav = tsi.getVR(dfS)
                 _,n = nav.T
