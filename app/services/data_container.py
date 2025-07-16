@@ -563,7 +563,7 @@ class DataContainer:
         
 
         # Load groups
-        #groupsInner = []
+        groupsInner = []
         i = len(self.groups) + 1
         if step == 'raw':
             for project in projectsInner:
@@ -578,7 +578,7 @@ class DataContainer:
                         group = Group(i, f"{group_name}",group_path,step)
                         group.project = project
                         i = i + 1
-                        #groupsInner.append(group)
+                        groupsInner.append(group)
                         project.add_group(group)
             #print('groupsInner', [(g.id, g.name, g.path) for g in groupsInner])
 
@@ -608,7 +608,7 @@ class DataContainer:
                                 if 'panoramic' in pars.keys(): group.set_panoramic(pars['panoramic'])
                                 group.project = project
                                 i = i + 1
-                                #groupsInner.append(group)
+                                groupsInner.append(group)
                                 project.add_group(group)  
         #groups = groups + groupsInner  
 
