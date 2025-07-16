@@ -91,19 +91,19 @@
             const groupBody = collapseRow.querySelector(`#groups-${collapseId}`);
             groupBody.innerHTML = '';
 
-            if (groupData.groups && groupData.groups.length > 0) {
-              groupData.groups.forEach(groupName => {
+            if (groups && groups.length > 0) {
+              groups.forEach(groupName => {
                 const groupRow = document.createElement('tr');
                 groupRow.classList.add('group-row');
                 groupRow.innerHTML = `<td>${groupName}</td>`;
                 groupBody.appendChild(groupRow);
               });
-            } else if (groupData.groups && groupData.groups.length === 0) {
+            } else if (groups && groups.length === 0) {
               const noGroupsRow = document.createElement('tr');
               noGroupsRow.classList.add('no-groups');
               noGroupsRow.innerHTML = `<td>(No groups)</td>`;
               groupBody.appendChild(noGroupsRow);
-            } else if (groupData.error) {
+            } else if (group.error) {
               const errorRow = document.createElement('tr');
               errorRow.innerHTML = `<td class="text-danger">${groupData.error}</td>`;
               groupBody.appendChild(errorRow);
