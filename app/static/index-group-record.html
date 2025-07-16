@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Projects, Groups & Records</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    .group-row td {
+      padding-left: 2rem;
+      background-color: #f9f9f9;
+    }
+    .record-row td {
+      padding-left: 4rem;
+      background-color: #f1f8e9;
+      font-style: italic;
+    }
+    .no-groups td,
+    .no-records td {
+      padding-left: 2rem;
+      font-style: italic;
+      color: #888;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <h1 class="mb-4">Projects, Groups, and Records</h1>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Project / Group / Record</th>
+          </tr>
+        </thead>
+        <tbody id="projects-table-body">
+          <tr><td>Loading projects...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function encodeId(str) {
+      // base64 encode and strip padding '=' to create safe IDs for collapse
+      return btoa(str).replace(/=/g, '');
+    }
+
+    async function loadRecords(projectName, groupName, recordsBody) {
+      recordsBody.innerHTML = '<tr><td class="no-records ps-4">Loading records...</td></tr>';
+
+      try {
+        const response = await fetch(`/records/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}`);
+        if (!response.ok) throw new Error('Error fetching records');
+        const data = await response.json();
+        recordsBody.innerHTML = '';
+
+        if (data.records && data.records.length > 0) {
+          data.records.forEach(recordName => {
+            const recordRow = document.createElement('tr');
+            recordRow.classList.add('record-row');
+            const baseUrl = 'http://192.167.233.88:8087/edit_record';
+            const href = `${baseUrl}/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}/${encodeURIComponent(recordName)}`;
+            recordRow.innerHTML = `<td><a href="${href}" target="_blank" rel="noopener noreferrer">${recordName}</a></td>`;
+            recordsBody.appendChild(recordRow);
+          });
+        } else if (data.records && data.records.length === 0) {
+          recordsBody.innerHTML = `<tr><td class="no-records ps-4">(No records)</td></tr>`;
+        } else if (data.error) {
+          recordsBody.innerHTML = `<tr><td class="text-danger ps-4">Error: ${data.error}</td></tr>`;
+        }
+      } catch (error) {
+        recordsBody.innerHTML = `<tr><td class="text-danger ps-4">Error loading records</td></tr>`;
+      }
+    }
+
+    async function loadProjects() {
+      const tableBody = document.getElementById('projects-table-body');
+      tableBody.innerHTML = '';
+
+      try {
+        const response = await fetch('/projects');
+        if (!response.ok) throw new Error('Error fetching projects');
+        const data = await response.json();
+        const projects = data.projects;
+
+        if (projects.length === 0) {
+          tableBody.innerHTML = '<tr><td>No projects found.</td></tr>';
+          return;
+        }
+
+        for (const projectName of projects) {
+          const projectCollapseId = `collapse-project-${encodeId(projectName)}`;
+
+          // Project row with collapse button
+          const projectRow = document.createElement('tr');
+          projectRow.classList.add('table-primary');
+          projectRow.innerHTML = `
+            <td>
+              <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#${projectCollapseId}" aria-expanded="false" aria-controls="${projectCollapseId}">
+                <span class="me-2">+</span>${projectName}
+              </button>
+            </td>
+          `;
+          tableBody.appendChild(projectRow);
+
+          // Collapse container for groups
+          const groupsCollapseRow = document.createElement('tr');
+          groupsCollapseRow.innerHTML = `
+            <td class="p-0 border-0">
+              <div class="collapse" id="${projectCollapseId}">
+                <table class="table mb-0">
+                  <tbody id="groups-${projectCollapseId}">
+                    <tr><td class="no-groups ps-4">Loading groups...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(groupsCollapseRow);
+
+          const groupsBody = groupsCollapseRow.querySelector(`#groups-${projectCollapseId}`);
+
+          // Fetch groups for this project
+          try {
+            const groupResponse = await fetch(`/groups/${encodeURIComponent(projectName)}`);
+            if (!groupResponse.ok) throw new Error('Error fetching groups');
+            const groupData = await groupResponse.json();
+            groupsBody.innerHTML = '';
+
+            if (groupData.groups && groupData.groups.length > 0) {
+              for (const groupName of groupData.groups) {
+                const groupCollapseId = `collapse-group-${encodeId(projectName)}-${encodeId(groupName)}`;
+
+                // Group row with collapse button
+                const groupRow = document.createElement('tr');
+                groupRow.classList.add('group-row');
+                const editGroupUrl = `http://192.167.233.88:8087/edit_group/${encodeURIComponent(projectName)}/${encodeURIComponent(groupName)}`;
+
+                groupRow.innerHTML = `
+                  <td>
+                    <button class="btn btn-sm btn-outline-secondary me-2" type="button" data-bs-toggle="collapse" data-bs-target="#${groupCollapseId}" aria-expanded="false" aria-controls="${groupCollapseId}">
+                      <span>+</span>
+                    </button>
+                    <a href="${editGroupUrl}" target="_blank" rel="noopener noreferrer">${groupName}</a>
+                  </td>
+                `;
+                groupsBody.appendChild(groupRow);
+
+                // Collapse container for records
+                const recordsCollapseRow = document.createElement('tr');
+                recordsCollapseRow.innerHTML = `
+                  <td class="p-0 border-0">
+                    <div class="collapse" id="${groupCollapseId}">
+                      <table class="table mb-0">
+                        <tbody id="records-${groupCollapseId}">
+                          <tr><td class="no-records ps-4">Loading records...</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                `;
+                groupsBody.appendChild(recordsCollapseRow);
+
+                const recordsBody = recordsCollapseRow.querySelector(`#records-${groupCollapseId}`);
+
+                // Load records when group collapse is shown
+                const collapseElement = recordsCollapseRow.querySelector('.collapse');
+                collapseElement.addEventListener('show.bs.collapse', () => {
+                  if (!collapseElement.dataset.loaded) {
+                    loadRecords(projectName, groupName, recordsBody);
+                    collapseElement.dataset.loaded = 'true';
+                  }
+                });
+              }
+            } else if (groupData.groups && groupData.groups.length === 0) {
+              groupsBody.innerHTML = `<tr><td class="no-groups ps-4">(No groups)</td></tr>`;
+            } else if (groupData.error) {
+              groupsBody.innerHTML = `<tr><td class="text-danger ps-4">${groupData.error}</td></tr>`;
+            }
+          } catch (error) {
+            groupsBody.innerHTML = `<tr><td class="text-danger ps-4">Error loading groups</td></tr>`;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        tableBody.innerHTML = '<tr><td>Error loading projects.</td></tr>';
+      }
+    }
+
+    window.onload = loadProjects;
+  </script>
+</body>
+</html>

@@ -41,6 +41,9 @@ app = FastAPI(title="procezo-api", version="0.0.1", description="Procezo API for
 # Register api_ruter
 app.include_router(api_router)
 
+# Mount 'static' folder at "/"
+app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
+
 # Mount Dash at /dashboard
 app.mount("/dashboard", WSGIMiddleware(dash_app.server))
 app.mount("/vars", WSGIMiddleware(vars.server))
