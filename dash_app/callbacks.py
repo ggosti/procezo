@@ -535,7 +535,9 @@ def register_callbacks_records(app):
             navAr = None
             if 'nav' in dfS.columns:
                 nav = tsi.getVR(dfS)
+                _,n = nav.T
                 navAr = tsi.getAR(dfS)
+                _,nAr = navAr.T
             path = tsi.getPath(dfS,['posx','posy','posz'])
             fpath = None
             if 'fx' in dfS.columns: 
@@ -543,14 +545,19 @@ def register_callbacks_records(app):
             dpath = tsi.getPath(dfS,['dirx','diry','dirz'])
             if len(dfS.index):
                 if isinstance(fpath,type(None)):
-                    t,x,y,z,dx,dy,dz,n = tsi.getSesVars(path,dpath,fpath,nav=nav)       
-                    t3,nAr = navAr.T   
+                    #t,x,y,z,dx,dy,dz,n = tsi.getSesVars(path,dpath,fpath,nav=nav)    
+                    t,x,y,z = path.T
+                    _, dx,dy,dz = dpath.T   
+                    #_, nAr = navAr.T   
                     #print('t',t)
                     plotLines = [x,y,z,dx,dy,dz]
                     lineName = ['posx','posy','posz','dirx','diry','dirz']
                 else:
-                    t,x,y,z,dx,dy,dz,fx,fy,fz,n = tsi.getSesVars(path,dpath,fpath,nav=nav)     
-                    t3,nAr = navAr.T 
+                    #t,x,y,z,dx,dy,dz,fx,fy,fz,n = tsi.getSesVars(path,dpath,fpath,nav=nav)     
+                    t,x,y,z = path.T
+                    _,fx,fy,fz = fpath.T
+                    _, dx,dy,dz = dpath.T   
+                    #t3,nAr = navAr.T 
                     plotLines = [x,y,z,dx,dy,dz,fx,fy,fz]
                     lineName = ['posx','posy','posz','dirx','diry','dirz','fx','fy','fz']
 
