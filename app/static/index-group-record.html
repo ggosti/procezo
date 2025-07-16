@@ -61,7 +61,7 @@
         recordsBody.innerHTML = '';
 
         if (records && records.length > 0) {
-          data.records.forEach(recordName => {
+          records.forEach(recordName => {
             console.log("recordsName:", recordsName);
             const recordRow = document.createElement('tr');
             recordRow.classList.add('record-row');
