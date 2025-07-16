@@ -563,7 +563,7 @@ class DataContainer:
         
 
         # Load groups
-        groupsInner = []
+        #groupsInner = []
         i = len(self.groups) + 1
         if step == 'raw':
             for project in projectsInner:
@@ -578,7 +578,7 @@ class DataContainer:
                         group = Group(i, f"{group_name}",group_path,step)
                         group.project = project
                         i = i + 1
-                        groupsInner.append(group)
+                        #groupsInner.append(group)
                         project.add_group(group)
             #print('groupsInner', [(g.id, g.name, g.path) for g in groupsInner])
 
@@ -598,6 +598,8 @@ class DataContainer:
                             if os.path.isdir(ver_path):
                                 group = Group(i, f"{group_name}", group_path, step)
                                 group.set_ver(ver)
+                                parent_group = self.get_group(project.name, group_name, "raw")
+                                group.parent_group = parent_group
                                 if group.parsFileExists():
                                     pars = group.loadPars()
                                 else:
@@ -606,7 +608,7 @@ class DataContainer:
                                 if 'panoramic' in pars.keys(): group.set_panoramic(pars['panoramic'])
                                 group.project = project
                                 i = i + 1
-                                groupsInner.append(group)
+                                #groupsInner.append(group)
                                 project.add_group(group)  
         #groups = groups + groupsInner  
 
@@ -641,7 +643,7 @@ class DataContainer:
         
 
         self.projects = self.projects + projectsInner
-        self.groups = self.groups + groupsInner
+        #self.groups = self.groups + groupsInner
         #self.records = self.records + recordsInner
     
     def link_records(self):
@@ -703,7 +705,7 @@ class DataContainer:
     def update_put_group_pars(self,group):
         # Check if group has a pars.json file and update it or create it
         assert isinstance(group, Group) and group.step == 'proc', 'group must be a Group object and step must be proc'
-        #print('group.parent_group path',group.parent_group.path)
+        print('group.parent_group path',group.parent_group.path)
         if group.parsFileExists():
             pars = group.loadPars()
         else:
