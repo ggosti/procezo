@@ -41,10 +41,11 @@
       tableBody.innerHTML = '';
 
       try {
-        const response = await fetch('/projects');
+        const response = await fetch('/api/projects/raw');
         if (!response.ok) throw new Error('Error fetching projects');
         const data = await response.json();
-        const projects = data.projects;
+        //const projects = data.projects
+        const projects = data.map(item => item.name);
 
         if (projects.length === 0) {
           tableBody.innerHTML = '<tr><td>No projects found.</td></tr>';
@@ -80,9 +81,10 @@
           tableBody.appendChild(collapseRow);
 
           try {
-            const groupResponse = await fetch(`/groups/${encodeURIComponent(projectName)}`);
+            const groupResponse = await fetch(`/api/groups/raw/${encodeURIComponent(projectName)}`);
             if (!groupResponse.ok) throw new Error('Error fetching groups');
             const groupData = await groupResponse.json();
+            console.log("groupData:", groupData);
             const groupBody = collapseRow.querySelector(`#groups-${collapseId}`);
             groupBody.innerHTML = '';
 
