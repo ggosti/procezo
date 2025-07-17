@@ -249,6 +249,7 @@ def allPaths3D(paths,largerThan=0,ax=None,yup=True):
 
 
 def plotKDE(x,y,z,density,yup=True,ax=None):
+    # !!!this only draws density on current points with redefined density on a 3d projections 
     if ax == None:
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
@@ -584,10 +585,12 @@ def makeBBox(paths,dpaths = None, fpaths=None):
     dpaths -- list of arrays
     fpaths -- list of arrays
     """
+    fx = np.empty(3)
+    fx[:] = np.nan
     #_,n = np.vstack(navs).T
     _,x,y,z = np.vstack(paths).T
     if isinstance(dpaths,list): _,u,v,w = np.vstack(dpaths).T
-    if isinstance(dpaths,list): _,fx,fy,fz = np.vstack(fpaths).T
+    if isinstance(fpaths,list): _,fx,fy,fz = np.vstack(fpaths).T
     #print('x',np.nanmin(x),np.nanmax(x))
     #print('u',np.nanmin(u),np.nanmax(u))
     if np.isnan(fx).all():
